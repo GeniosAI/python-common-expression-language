@@ -99,6 +99,7 @@ namespace_packages = true
 exclude = [
     "tests/",
     ".venv/",
+    "venv/",
     "target/",
     "shell/",
     "test_tui_complete.py",
