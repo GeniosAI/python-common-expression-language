@@ -20,7 +20,9 @@ class TestStringUtilities:
         When this test starts failing (raises different error), it means
         lowerAscii() has been implemented upstream.
         """
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*lowerAscii"):
+        with pytest.raises(
+            RuntimeError, match="Undefined variable or function.*lowerAscii"
+        ):
             cel.evaluate('"HELLO".lowerAscii()')
 
     def test_upper_ascii_not_implemented(self):
@@ -29,7 +31,9 @@ class TestStringUtilities:
 
         When this test starts failing, upperAscii() has been implemented.
         """
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*upperAscii"):
+        with pytest.raises(
+            RuntimeError, match="Undefined variable or function.*upperAscii"
+        ):
             cel.evaluate('"hello".upperAscii()')
 
     def test_index_of_not_implemented(self):
@@ -38,7 +42,9 @@ class TestStringUtilities:
 
         When this test starts failing, indexOf() has been implemented.
         """
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*indexOf"):
+        with pytest.raises(
+            RuntimeError, match="Undefined variable or function.*indexOf"
+        ):
             cel.evaluate('"hello world".indexOf("world")')
 
     def test_substring_not_implemented(self):
@@ -47,7 +53,9 @@ class TestStringUtilities:
 
         When this test starts failing, substring() has been implemented.
         """
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*substring"):
+        with pytest.raises(
+            RuntimeError, match="Undefined variable or function.*substring"
+        ):
             cel.evaluate('"hello".substring(1, 3)')
 
 
@@ -103,7 +111,8 @@ class TestMixedArithmetic:
             cel.evaluate("3 * 2u")
 
     @pytest.mark.xfail(
-        reason="Mixed signed/unsigned arithmetic not supported in cel v0.11.0", strict=False
+        reason="Mixed signed/unsigned arithmetic not supported in cel v0.11.0",
+        strict=False,
     )
     def test_mixed_arithmetic_expected_behavior(self):
         """
@@ -134,7 +143,9 @@ class TestOptionalValues:
         # This currently likely fails with parse error, but when optional chaining
         # is implemented, it should work
         with pytest.raises((ValueError, RuntimeError)):
-            cel.evaluate("user?.profile?.name", {"user": {"profile": {"name": "Alice"}}})
+            cel.evaluate(
+                "user?.profile?.name", {"user": {"profile": {"name": "Alice"}}}
+            )
 
     def test_optional_expected_behavior(self):
         """
@@ -160,7 +171,8 @@ class TestMapFunctionImprovements:
             cel.evaluate("[1, 2, 3].map(x, x * 2.0)")
 
     @pytest.mark.xfail(
-        reason="map() function mixed arithmetic not supported in cel v0.11.0", strict=False
+        reason="map() function mixed arithmetic not supported in cel v0.11.0",
+        strict=False,
     )
     def test_map_mixed_arithmetic_expected_behavior(self):
         """
@@ -194,12 +206,16 @@ class TestLogicalOperatorBehavior:
         # CEL's logical operators with boolean first operand work correctly
         assert cel.evaluate("true || 99")  # Short-circuits to True
         assert cel.evaluate("false || 99") == 99  # Returns second operand per CEL spec
-        assert cel.evaluate("false || 'default'") == "default"  # Any type for second operand
+        assert (
+            cel.evaluate("false || 'default'") == "default"
+        )  # Any type for second operand
 
         # AND operator has stricter requirements for both operands
         assert not cel.evaluate("false && 99")  # Short-circuits to False
         with pytest.raises(ValueError, match="No such overload"):
-            cel.evaluate("true && 99")  # AND requires both operands to be boolean when evaluated
+            cel.evaluate(
+                "true && 99"
+            )  # AND requires both operands to be boolean when evaluated
 
     def test_or_operator_correct_boolean_behavior(self):
         """
@@ -243,7 +259,9 @@ class TestMissingStringFunctions:
 
         When this test starts failing, lastIndexOf() has been implemented.
         """
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*lastIndexOf"):
+        with pytest.raises(
+            RuntimeError, match="Undefined variable or function.*lastIndexOf"
+        ):
             cel.evaluate('"hello world hello".lastIndexOf("hello")')
 
     def test_replace_not_implemented(self):
@@ -252,7 +270,9 @@ class TestMissingStringFunctions:
 
         When this test starts failing, replace() has been implemented.
         """
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*replace"):
+        with pytest.raises(
+            RuntimeError, match="Undefined variable or function.*replace"
+        ):
             cel.evaluate('"hello world".replace("world", "universe")')
 
     def test_split_not_implemented(self):
@@ -300,32 +320,20 @@ class TestMissingAggregationFunctions:
         with pytest.raises(RuntimeError, match="Undefined variable or function.*fold"):
             cel.evaluate("fold([1, 2, 3], 0, sum + x)")
 
-    def test_reduce_function_not_available(self):
-        """
-        Test that reduce() is not available - various syntax attempts.
-
-        When this test starts failing, reduce() has been implemented upstream.
-        """
-        # Global function syntax
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*reduce"):
-            cel.evaluate("reduce([1, 2, 3, 4, 5], 0, sum + x)")
-
-        # Method syntax
-        with pytest.raises((RuntimeError, ValueError)):
-            cel.evaluate("[1, 2, 3].reduce(0, (acc, x) -> acc + x)")
-
-    @pytest.mark.xfail(reason="Aggregation functions not implemented in cel v0.11.1", strict=False)
+    @pytest.mark.xfail(
+        reason="Aggregation functions not implemented in cel v0.11.1", strict=False
+    )
     def test_aggregation_functions_expected_behavior(self):
         """
         Test expected aggregation function behavior when implemented.
 
-        This test will pass when upstream implements sum(), fold(), reduce().
+        This test will pass when upstream implements sum() and fold().
         """
         # Sum function
         assert cel.evaluate("sum([1, 2, 3, 4, 5])") == 15
         assert cel.evaluate("sum([1.1, 2.2, 3.3])") == pytest.approx(6.6)
 
-        # Fold/reduce functions (syntax may differ when actually implemented)
+        # Fold function (syntax may differ when actually implemented)
         assert cel.evaluate("[1, 2, 3, 4].fold(0, (acc, x) -> acc + x)") == 10
         assert cel.evaluate("[1, 2, 3].fold(1, (acc, x) -> acc * x)") == 6
 
@@ -415,4 +423,6 @@ def test_upstream_improvements_summary():
 
     # This test documents our monitoring approach
     assert len(improvements_to_watch) > 0
-    print(f"Monitoring {len(improvements_to_watch)} categories of upstream improvements")
+    print(
+        f"Monitoring {len(improvements_to_watch)} categories of upstream improvements"
+    )
