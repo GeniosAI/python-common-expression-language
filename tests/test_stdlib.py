@@ -54,7 +54,9 @@ class TestSubstringFunction:
         assert result == "world"
 
         # Chained with other operations
-        result = cel.evaluate('substring("HELLO", 0, 2) + substring("world", 0, 3)', context)
+        result = cel.evaluate(
+            'substring("HELLO", 0, 2) + substring("world", 0, 3)', context
+        )
         assert result == "HEwor"
 
 
@@ -89,7 +91,9 @@ class TestSubstringWithOtherFunctions:
         assert result == 5
 
         # Extract and test membership
-        result = cel.evaluate('substring("hello world", 6, 11).startsWith("wor")', context)
+        result = cel.evaluate(
+            'substring("hello world", 6, 11).startsWith("wor")', context
+        )
         assert result is True
 
     def test_substring_with_context_variables(self):
@@ -109,7 +113,9 @@ class TestSubstringWithOtherFunctions:
         context.add_variable("email", "user@example.com")
 
         # Extract domain
-        result = cel.evaluate('substring(email, 5, 12) == "example" ? "valid" : "invalid"', context)
+        result = cel.evaluate(
+            'substring(email, 5, 12) == "example" ? "valid" : "invalid"', context
+        )
         assert result == "valid"
 
 
@@ -167,36 +173,31 @@ class TestUpstreamDetection:
     """
     Detection tests for upstream cel-rust implementations.
 
-    These tests verify that we're still using our Python wrappers.
-    When these tests start failing, it means upstream has added native support
-    and we should switch to using the upstream implementation.
+    These tests verify which pieces are now available natively in cel-rust
+    and which still rely on Python wrappers.
     """
 
-    def test_substring_not_in_upstream(self):
+    def test_substring_available_upstream(self):
         """
-        Test that substring() is not natively available in cel-rust.
+        Test that substring() is now natively available in cel-rust.
 
-        When this test FAILS, it means cel-rust has added substring() support.
-        ACTION REQUIRED: Remove our cel.stdlib.substring wrapper and use native version.
+        This guards the native method support added upstream.
 
         Related upstream issue: https://github.com/cel-rust/cel-rust/issues/200
         """
-        # This should fail because substring is not available without our wrapper
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*substring"):
-            cel.evaluate('"hello".substring(1, 3)', {})
+        assert cel.evaluate('"hello".substring(1, 3)', {}) == "el"
 
         # Note: test_upstream_improvements.py::TestStringUtilities::test_substring_not_implemented
-        # also monitors this. When that test starts failing, update both files.
+        # also monitors this behavior.
 
     def test_our_wrapper_still_needed(self):
         """
-        Verify our wrapper is providing value until upstream implements it.
+        Verify our global wrapper is still providing value if method support
+        does not yet cover the standalone function form.
 
         This test confirms that:
-        1. Native CEL doesn't have substring
+        1. The global substring() helper is not exposed by default
         2. Our wrapper successfully provides it
-
-        When test_substring_not_in_upstream fails, remove this entire test class.
         """
         # Without wrapper - should fail
         with pytest.raises(RuntimeError):

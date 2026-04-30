@@ -124,7 +124,7 @@ dependencies = [
 [[package]]
 name = "cel"
 version = "0.13.0"
-source = "git+https://github.com/GeniosAI/cel-rust.git?rev=e4b95002374b9adcc862965d00ebf9c2f701d6fe#e4b95002374b9adcc862965d00ebf9c2f701d6fe"
+source = "git+https://github.com/GeniosAI/cel-rust.git?rev=1f35435e5ad3261083cf7f337b922765d01dcb63#1f35435e5ad3261083cf7f337b922765d01dcb63"
 dependencies = [
  "antlr4rust",
  "base64",

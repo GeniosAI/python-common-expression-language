@@ -49,14 +49,21 @@ class TestStringUtilities:
 
     def test_substring_not_implemented(self):
         """
-        Test that substring() is not implemented.
+        Test that substring() is now implemented upstream.
 
-        When this test starts failing, substring() has been implemented.
+        This guards the cel-rust functionality we just pinned to.
         """
-        with pytest.raises(
-            RuntimeError, match="Undefined variable or function.*substring"
-        ):
-            cel.evaluate('"hello".substring(1, 3)')
+        assert cel.evaluate('"hello".substring(1, 3)') == "el"
+
+    def test_timestamp_date_implemented(self):
+        """
+        Test that timestamp.date() is implemented upstream.
+
+        This guards the cel-rust functionality we just pinned to.
+        """
+        assert (
+            cel.evaluate("timestamp('2024-01-15T10:30:45.123Z').date()") == "2024-01-15"
+        )
 
 
 class TestTypeIntrospection:
@@ -277,12 +284,15 @@ class TestMissingStringFunctions:
 
     def test_split_not_implemented(self):
         """
-        Test that split() is not implemented.
+        Test that split() is now implemented upstream.
 
-        When this test starts failing, split() has been implemented.
+        This guards the cel-rust functionality we just pinned to.
         """
-        with pytest.raises(RuntimeError, match="Undefined variable or function.*split"):
-            cel.evaluate('"hello,world,test".split(",")')
+        assert cel.evaluate('"hello,world,test".split(",")') == [
+            "hello",
+            "world",
+            "test",
+        ]
 
     def test_join_not_implemented(self):
         """
@@ -411,6 +421,7 @@ def test_upstream_improvements_summary():
             "split",
             "join",
         ],
+        "Timestamp functions": ["timestamp.date()"],
         "Type introspection": ["type() function"],
         "Mixed arithmetic": ["int + uint", "int * uint operations"],
         "Optional values": ["optional.of()", "optional chaining (?.)"],
