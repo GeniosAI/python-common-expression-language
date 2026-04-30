@@ -67,11 +67,15 @@ jobs:
         uses: PyO3/maturin-action@v1.51.0
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist -i python
+          args: --release --out dist -i python${{ matrix.python-version }}
           sccache: "true"
+
+      - name: Verify built wheel
+        run: ls -1 dist/*.whl
 
       - name: Upload wheels
         uses: actions/upload-artifact@v7.0.1
         with:
           name: ${{ matrix.artifact-name }}
+          if-no-files-found: error
           path: dist/*.whl
