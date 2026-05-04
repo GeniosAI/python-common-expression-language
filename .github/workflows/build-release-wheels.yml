@@ -8,12 +8,24 @@ permissions:
 
 jobs:
   linux:
-    name: linux-aarch64 py${{ matrix.python-version }}
+    name: ${{ matrix.os-name }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
+          - os-name: linux-x86_64
+            runner: ubuntu-latest
+            target: x86_64
+            python-version: "3.12"
+            manylinux: auto
+            artifact-name: wheels-linux-x86_64-cp312
+          - os-name: linux-x86_64
+            runner: ubuntu-latest
+            target: x86_64
+            python-version: "3.13"
+            manylinux: auto
+            artifact-name: wheels-linux-x86_64-cp313
           - os-name: linux-aarch64
             runner: ubuntu-latest
             target: aarch64
