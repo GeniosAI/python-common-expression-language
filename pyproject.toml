@@ -7,6 +7,7 @@ license = "Apache-2.0"
 authors = [
     {name = "Brian Thorne", email = "brian@hardbyte.nz"}
 ]
+
 requires-python = ">=3.11"
 classifiers = [
     "License :: OSI Approved :: Apache Software License",
