@@ -16,3 +16,6 @@ uv.lock
 site/
 dist/
 *.so
+# Local agent tooling (worktrees, session state) — never committed
+.claude/
+.prompticorn/

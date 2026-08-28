@@ -1,0 +1,167 @@
+name: CodeArtifact Publish
+
+# Publishes this package's wheels + sdist to AWS CodeArtifact, via the two
+# reusable templates in GeniosAI/ci-templates (BE-2095, P8: pkgrepo ->
+# CodeArtifact).
+#
+# ALONGSIDE, NOT INSTEAD OF. build-release-wheels.yml stays exactly as it is and
+# remains the wheel-release path for this repo. This workflow is a second,
+# independent consumer of the same maturin build shape that happens to hand its
+# wheels to CodeArtifact instead of to a human downloading run artifacts.
+# Nothing here reads, replaces or depends on that workflow; turning this one off
+# leaves the existing path untouched.
+#
+# INERT UNTIL SWITCHED ON. Both jobs are gated on the repository variable
+# CODEARTIFACT_PUBLISH_ENABLED. Until someone sets it to the string "true" this
+# workflow lands fully wired and does nothing: the jobs evaluate to skipped, no
+# runner is claimed, no OIDC assertion is minted, nothing is uploaded. Enabling
+# it is a repository-variable change, not a code change, so the rollout does not
+# need a PR against this repo and can be reverted instantly.
+#
+# ONE-REPO PROOF: THE `force` DISPATCH INPUT. That gate has a failure mode worse
+# than a red run: with the variable unset, a manual dispatch SKIPS both jobs and
+# reports the run GREEN, so the rollout collects a tick without a single wheel
+# having been built. `force` closes that gap. Dispatch this workflow by hand with
+# force = true and both jobs run with the variable still unset, which proves the
+# build -> OIDC -> CodeArtifact path end to end on THIS repo before any repo is
+# armed for its next Release. It is also per-run: a dispatch input expires with
+# the run that used it, so unlike the variable there is nothing left switched on
+# afterwards for someone to remember to switch off.
+#
+# `force` CANNOT ARM THE RELEASE PATH, AND THAT IS THE WHOLE POINT. The override
+# is written `inputs.force`, and the `inputs` context is populated only for
+# workflow_dispatch (and workflow_call). On a `release` event it is absent, so
+# `inputs.force` is null, and null is falsy in an `if` — releases stay governed by
+# CODEARTIFACT_PUBLISH_ENABLED and by nothing else. Two spellings that look
+# equivalent are deliberately NOT used: `fromJSON(inputs.force)` would cast that
+# null to the empty string and fail parsing it as JSON on every release, turning
+# the no-op into a broken run; and `github.event.inputs.force == 'true'` reads the
+# stringified copy of a value the `inputs` context already hands over as a real
+# boolean, because the input is declared `type: boolean`.
+#
+# NO cp312 — DELIBERATE. build-release-wheels.yml builds cp312 and cp313; this
+# one builds cp313 only, so the matrix is three wheels, one per target, not six.
+# Every consumer that declares requires-python in this estate is already
+# >=3.13,<3.14, so a cp312 wheel is build minutes and registry space spent on an
+# artifact nothing can resolve. That is the estate standard (it is also the
+# template's own default); it is stated explicitly below rather than inherited
+# silently, because the file next door builds cp312 and a reader comparing the
+# two should see the divergence, not have to infer it.
+#
+# COORDINATES LIVE IN VARIABLES. No account id, region, domain, endpoint or role
+# ARN appears here or in the templates — they are assembled at run time from
+# CODEARTIFACT_ACCOUNT_<ENV> / CODEARTIFACT_DOMAIN_<ENV> / CODEARTIFACT_REGION.
+#
+# VERSION COMES FROM Cargo.toml. pyproject.toml declares version = dynamic and
+# maturin reads it from Cargo.toml's [package] version, so the version that gets
+# published is whatever is in Cargo.toml on the released commit — NOT the name of
+# the release or tag. Bump Cargo.toml as part of cutting a release, or the run
+# will cheerfully publish the previous version's number.
+
+on:
+  # Manual first: the intended rollout is to dispatch this once by hand against
+  # dev, confirm the wheels land, and only then rely on the release trigger.
+  workflow_dispatch:
+    inputs:
+      force:
+        description: >-
+          Run even though CODEARTIFACT_PUBLISH_ENABLED is not set to "true".
+          For proving the publish path on this repo by hand; it applies to this
+          one manual run only and has no effect on the release trigger, which
+          the repository variable alone still arms.
+        required: false
+        default: false
+        type: boolean
+
+  # Fires when a GitHub Release is PUBLISHED in this repo, which builds and
+  # publishes the tagged commit (github.sha on a release event is the commit the
+  # tag points at, so the reusable build checks out exactly the released tree).
+  #
+  # Why not `push: tags:` — this repo is a fork of
+  # hardbyte/python-common-expression-language and its tag namespace is SHARED
+  # with upstream. v0.6.0, v0.7.0 and v0.8.0 are upstream's tags on commits that
+  # are not ancestors of this fork's main; the fork itself is still at 0.5.6.
+  # A routine `git fetch upstream --tags && git push origin --tags` would
+  # therefore push three tags that are not releases of this fork, and a tag
+  # trigger would answer by publishing upstream's tree into the estate's
+  # CodeArtifact at versions ABOVE anything this fork ships — which is precisely
+  # the artifact every consumer would then resolve. A Release is created
+  # deliberately, in this repo, and cannot appear as a side effect of syncing
+  # tags, so it is the trigger that means "we are releasing" rather than "a tag
+  # arrived". It also matches how this repo already releases: the existing
+  # build-release-wheels.yml is workflow_dispatch only, i.e. human-initiated.
+  #
+  # Firing once per intended release also matters because publishing is not
+  # freely repeatable: the publish template treats an existing version whose
+  # distributions differ byte-for-byte as a hard failure, and a recompiled Rust
+  # wheel is not guaranteed to be byte-identical to its predecessor.
+  release:
+    types: [published]
+
+# Read-only baseline, matching the other callers in this estate: single-purpose
+# ci-templates workflows declare their own permissions rather than inheriting,
+# but a called workflow can never hold more than its caller's grant, so the
+# caller still has to grant at least as much. Nothing at this level needs more
+# than a checkout; the publish job widens its own grant by exactly one scope.
+permissions:
+  contents: read
+
+jobs:
+  # maturin matrix -> one wheel per (target, interpreter) plus one sdist, each
+  # uploaded as a `wheels-*` artifact. Build only; this job never talks to AWS
+  # and needs no OIDC.
+  build:
+    name: Build distributions
+    # Armed for `release` by the variable; forced for a single manual run by the
+    # `force` input, which is null and therefore falsy on `release`. See header.
+    if: vars.CODEARTIFACT_PUBLISH_ENABLED == 'true' || inputs.force
+    uses: GeniosAI/ci-templates/.github/workflows/codeartifact-build-rust.yml@main
+    with:
+      # cp313 only — see the cp312 note in the header. Passed explicitly even
+      # though it is currently the template default, because it is the one place
+      # this repo knowingly ships a narrower set than build-release-wheels.yml.
+      interpreters: '["3.13"]'
+      # build_matrix is deliberately NOT passed: the template's default is
+      # already manylinux x86_64 + manylinux aarch64 + macOS aarch64, which is
+      # exactly this package's target set. Restating the estate default here
+      # would only create a second copy to drift.
+      #
+      # working_directory, maturin_args, artifact_prefix and the rest also take
+      # their defaults: Cargo.toml and pyproject.toml are at the repository root,
+      # and maturin picks up `features = ["pyo3/extension-module"]` from
+      # [tool.maturin] on its own, so there is nothing to override.
+
+  # Downloads every `wheels-*` artifact the build produced, assumes the estate
+  # publish role by OIDC, and uploads the set to CodeArtifact.
+  publish:
+    name: Publish to CodeArtifact
+    needs: build
+    # Armed for `release` by the variable; forced for a single manual run by the
+    # `force` input, which is null and therefore falsy on `release`. See header.
+    if: vars.CODEARTIFACT_PUBLISH_ENABLED == 'true' || inputs.force
+    permissions:
+      # OIDC: mint a short-lived, run-scoped AWS session instead of storing an
+      # access key. The template's publish job declares this too, but it cannot
+      # hold a permission this caller did not grant, so it has to be granted
+      # here as well.
+      id-token: write
+      contents: read
+    uses: GeniosAI/ci-templates/.github/workflows/codeartifact-publish.yml@main
+    with:
+      # pyproject [project].name. The import package is `cel`; the DISTRIBUTION
+      # is `common-expression-language`, and that is what is checked against the
+      # downloaded filenames.
+      package_name: common-expression-language
+      # `wheels-*` — the glob that collects every leg of the matrix plus the
+      # sdist. Taken from the build's output rather than written out, so the two
+      # halves cannot disagree about the artifact prefix.
+      artifact_pattern: ${{ needs.build.outputs.artifact_pattern }}
+      # Stated rather than defaulted: this input selects which account, domain
+      # and role a publish goes to, and that is not something to leave implicit.
+      # dev is where this repo is being rolled out first.
+      environment: dev
+      # package_version is intentionally left at its default (empty), which
+      # derives the version from the downloaded distributions. That guarantees
+      # the version checked for duplicates is the version actually inside the
+      # files, which matters here because the real source of truth is Cargo.toml
+      # and nothing in this workflow should restate it.
