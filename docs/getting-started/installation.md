@@ -45,6 +45,7 @@ After installation, you should have both the Python library and CLI tool availab
 
 ```python
 import cel
+
 result = cel.evaluate("1 + 2")
 # → 3
 assert result == 3

@@ -42,7 +42,7 @@ except RuntimeError as e:
 
 try:
     evaluate("missing_func()", {})  # Function doesn't exist
-    assert False, "Expected RuntimeError" 
+    assert False, "Expected RuntimeError"
 except RuntimeError as e:
     assert "Undefined variable or function" in str(e)
     # → RuntimeError: Undefined function 'missing_func'
@@ -103,7 +103,7 @@ except ValueError as e:
     # → ValueError: Malformed input handled safely (no crash)
 
 try:
-    evaluate('"mixed quotes\'', {})
+    evaluate("\"mixed quotes'", {})
     assert False, "Should have raised ValueError"
 except ValueError as e:
     assert "Failed to parse expression" in str(e)
@@ -124,10 +124,11 @@ from cel import evaluate
 from typing import Any, Optional, Dict
 import logging
 
+
 def safe_evaluate(expression: str, context: Optional[Dict[str, Any]] = None) -> Optional[Any]:
     """
     Safely evaluate a CEL expression with comprehensive error handling.
-    
+
     Returns None if evaluation fails for any reason.
     """
     try:
@@ -145,6 +146,7 @@ def safe_evaluate(expression: str, context: Optional[Dict[str, Any]] = None) -> 
         # Catch any other unexpected errors
         logging.error(f"Unexpected CEL error: {e}")
         return None
+
 
 # Usage
 result = safe_evaluate("user.age >= 18", {"user": {"age": 25}})
@@ -166,44 +168,46 @@ def validate_context(context: Dict[str, Any], required_fields: list[str]) -> Non
         if field not in context:
             raise ValueError(f"Missing required field: {field}")
 
+
 def validate_nested_field(context: Dict[str, Any], field_path: str) -> bool:
     """Check if a nested field exists (e.g., 'user.profile.verified')."""
-    keys = field_path.split('.')
+    keys = field_path.split(".")
     current = context
-    
+
     for key in keys:
         if not isinstance(current, dict) or key not in current:
             return False
         current = current[key]
-    
+
     return True
+
 
 def safe_policy_evaluation(policy: str, context: Dict[str, Any]) -> bool:
     """Evaluate a policy with context validation."""
     try:
         # Validate required top-level fields
         validate_context(context, ["user", "resource"])
-        
+
         # Validate specific nested fields used in policy
         if not validate_nested_field(context, "user.id"):
             raise ValueError("Missing required field: user.id")
-        
+
         result = evaluate(policy, context)
         return bool(result) if result is not None else False
-        
+
     except Exception as e:
         logging.error(f"Policy evaluation failed: {e}")
         return False  # Deny access on any error
 
+
 # Usage
 context = {
     "user": {"id": "alice", "role": "user"},
-    "resource": {"owner": "alice", "type": "document"}
+    "resource": {"owner": "alice", "type": "document"},
 }
 
 access_granted = safe_policy_evaluation(
-    'user.role == "admin" || resource.owner == user.id',
-    context
+    'user.role == "admin" || resource.owner == user.id', context
 )
 assert access_granted is True
 # → True (policy allows access - user owns resource)
@@ -221,17 +225,17 @@ assert result == False, "Should deny access when required context is missing"
 # Test 3: Missing nested required field
 context_missing_user_id = {
     "user": {"role": "user"},  # Missing "id" field
-    "resource": {"owner": "alice", "type": "document"}
+    "resource": {"owner": "alice", "type": "document"},
 }
 
-result = safe_policy_evaluation('resource.owner == user.id', context_missing_user_id)
+result = safe_policy_evaluation("resource.owner == user.id", context_missing_user_id)
 assert result == False, "Should deny access when required nested field is missing"
 # → False (fail-safe - deny access on missing data)
 
 # Test 4: Valid policy with different outcome
 admin_context = {
     "user": {"id": "bob", "role": "admin"},
-    "resource": {"owner": "alice", "type": "document"}
+    "resource": {"owner": "alice", "type": "document"},
 }
 
 result = safe_policy_evaluation('user.role == "admin" || resource.owner == user.id', admin_context)
@@ -250,65 +254,69 @@ When accepting CEL expressions from users, implement validation:
 import re
 from typing import List, Optional
 
+
 class CELValidator:
     """Validator for CEL expressions from untrusted sources."""
-    
+
     # Patterns that are commonly malformed and raise ValueError
     DANGEROUS_PATTERNS = [
-        r"'[^']*$",           # Unclosed single quote
-        r'"[^"]*$',           # Unclosed double quote
-        r"'[^']*\"",          # Mixed quotes: single -> double
-        r'"[^"]*\'',          # Mixed quotes: double -> single
+        r"'[^']*$",  # Unclosed single quote
+        r'"[^"]*$',  # Unclosed double quote
+        r"'[^']*\"",  # Mixed quotes: single -> double
+        r'"[^"]*\'',  # Mixed quotes: double -> single
     ]
-    
+
     # Maximum expression length to prevent DoS
     MAX_EXPRESSION_LENGTH = 1000
-    
+
     def validate_expression(self, expression: str) -> List[str]:
         """
         Validate a CEL expression for common issues.
-        
+
         Returns list of validation errors (empty if valid).
         """
         errors = []
-        
+
         # Check length
         if len(expression) > self.MAX_EXPRESSION_LENGTH:
             errors.append(f"Expression too long (max {self.MAX_EXPRESSION_LENGTH} chars)")
-        
+
         # Check for dangerous patterns
         for pattern in self.DANGEROUS_PATTERNS:
             if re.search(pattern, expression):
                 errors.append("Expression contains potentially problematic syntax")
                 break
-        
+
         # Check balanced quotes
         if not self._quotes_balanced(expression):
             errors.append("Unbalanced quotes detected")
-        
+
         return errors
-    
+
     def _quotes_balanced(self, expression: str) -> bool:
         """Check if quotes are properly balanced."""
         single_quotes = expression.count("'")
         double_quotes = expression.count('"')
-        
+
         # Simple check - both should be even (assuming no escaping)
         return single_quotes % 2 == 0 and double_quotes % 2 == 0
 
-def safe_user_expression_eval(user_expression: str, context: Dict[str, Any]) -> tuple[bool, Optional[Any], List[str]]:
+
+def safe_user_expression_eval(
+    user_expression: str, context: Dict[str, Any]
+) -> tuple[bool, Optional[Any], List[str]]:
     """
     Safely evaluate a user-provided CEL expression.
-    
+
     Returns (success, result, errors).
     """
     validator = CELValidator()
-    
+
     # Validate expression first
     validation_errors = validator.validate_expression(user_expression)
     if validation_errors:
         return False, None, validation_errors
-    
+
     # Attempt evaluation
     try:
         result = evaluate(user_expression, context)
@@ -316,8 +324,9 @@ def safe_user_expression_eval(user_expression: str, context: Dict[str, Any]) -> 
     except Exception as e:
         return False, None, [f"Evaluation error: {str(e)}"]
 
+
 # Usage
-user_input = 'user.age >= 18 && user.verified == true'
+user_input = "user.age >= 18 && user.verified == true"
 context = {"user": {"age": 25, "verified": True}}
 
 success, result, errors = safe_user_expression_eval(user_input, context)
@@ -327,27 +336,27 @@ if success:
 else:
     assert False, f"Validation should not have failed: {errors}"
 
-# Test 2: Invalid expression (accessing nonexistent field) 
-dangerous_input = 'user.nonexistent_field'
+# Test 2: Invalid expression (accessing nonexistent field)
+dangerous_input = "user.nonexistent_field"
 success, result, errors = safe_user_expression_eval(dangerous_input, context)
 assert success == False, "Expression with nonexistent field should be blocked"
 assert len(errors) > 0, "Should report validation or runtime errors"
 # → False, errors: ['Evaluation error: ...'] (field access error caught)
 
 # Test 3: Invalid syntax
-invalid_syntax = 'user.age >='  # Incomplete comparison
+invalid_syntax = "user.age >="  # Incomplete comparison
 success, result, errors = safe_user_expression_eval(invalid_syntax, context)
 assert success == False, "Invalid syntax should be rejected"
 assert len(errors) > 0, "Should report syntax errors"
 # → False, errors: ['Evaluation error: Failed to parse'] (malformed input caught)
 
 # Test 4: Empty expression
-success, result, errors = safe_user_expression_eval('', context)
+success, result, errors = safe_user_expression_eval("", context)
 assert success == False, "Empty expression should be rejected"
 # → False, errors: ['Evaluation error: ...'] (empty input handled safely)
 
 # Test 5: Undefined variable
-undefined_var = 'undefined_variable'
+undefined_var = "undefined_variable"
 success, result, errors = safe_user_expression_eval(undefined_var, context)
 assert success == False, "Undefined variable should cause error"
 # → False, errors: ['Evaluation error: Undefined variable'] (prevents data leakage)
@@ -367,25 +376,19 @@ Use CEL's built-in safety features to write robust expressions:
 risky_expr = 'user.profile.settings.theme == "dark"'
 
 # ✅ Safe - check existence first
-safe_expr = '''
+safe_expr = """
     has(user.profile) && 
     has(user.profile.settings) && 
     has(user.profile.settings.theme) && 
     user.profile.settings.theme == "dark"
-'''
+"""
 
 # ✅ Even safer - use defaults (with has() checks)
 safe_with_defaults = '''has(user.profile) && has(user.profile.settings) && 
     (has(user.profile.settings.theme) ? user.profile.settings.theme : "light") == "dark"'''
 
 # Test both approaches
-context_complete = {
-    "user": {
-        "profile": {
-            "settings": {"theme": "dark"}
-        }
-    }
-}
+context_complete = {"user": {"profile": {"settings": {"theme": "dark"}}}}
 
 context_missing = {"user": {"name": "alice"}}
 
@@ -407,13 +410,13 @@ Prevent type errors with careful expression design:
 
 ```python
 # ❌ Risky - assumes numeric types
-risky_expr = 'user.age > 18'
+risky_expr = "user.age > 18"
 
 # ✅ Safe - use numeric conversion with error handling
-safe_expr = 'has(user.age) && double(user.age) > 18.0'
+safe_expr = "has(user.age) && double(user.age) > 18.0"
 
 # ✅ Alternative - check for common failure case first
-defensive_expr = 'has(user.age) && user.age != null && user.age > 18'
+defensive_expr = "has(user.age) && user.age != null && user.age > 18"
 
 # Note: type() function is not available in this CEL implementation
 # Use conversion functions (double(), int()) for type safety instead
@@ -430,63 +433,73 @@ import logging
 import json
 from datetime import datetime, timezone
 
-def evaluate_with_logging(expression: str, context: Dict[str, Any], operation_id: str = None) -> Any:
+
+def evaluate_with_logging(
+    expression: str, context: Dict[str, Any], operation_id: str = None
+) -> Any:
     """Evaluate with comprehensive logging for production debugging."""
-    
+
     start_time = datetime.now(timezone.utc)
-    
+
     log_context = {
         "operation_id": operation_id,
         "expression": expression,
         "context_keys": list(context.keys()) if context else [],
-        "timestamp": start_time.isoformat()
+        "timestamp": start_time.isoformat(),
     }
-    
+
     try:
         result = evaluate(expression, context)
-        
+
         # Log successful evaluation
-        logging.info("CEL evaluation succeeded", extra={
-            **log_context,
-            "result_type": type(result).__name__,
-            "duration_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-        })
-        
+        logging.info(
+            "CEL evaluation succeeded",
+            extra={
+                **log_context,
+                "result_type": type(result).__name__,
+                "duration_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000,
+            },
+        )
+
         return result
-        
+
     except Exception as e:
         # Log detailed error information
-        logging.error("CEL evaluation failed", extra={
-            **log_context,
-            "error_type": type(e).__name__,
-            "error_message": str(e),
-            "duration_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000
-        })
+        logging.error(
+            "CEL evaluation failed",
+            extra={
+                **log_context,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "duration_ms": (datetime.now(timezone.utc) - start_time).total_seconds() * 1000,
+            },
+        )
         raise
+
 
 # Usage in web application
 def get_user(user_id: str):
     """Mock function to get user data."""
     return {"id": user_id, "role": "user"}
 
+
 def get_resource(resource_id: str):
     """Mock function to get resource data."""
     return {"id": resource_id, "type": "document"}
 
+
 def check_access(user_id: str, resource_id: str, policy: str) -> bool:
-    context = {
-        "user": get_user(user_id),
-        "resource": get_resource(resource_id)
-    }
-    
+    context = {"user": get_user(user_id), "resource": get_resource(resource_id)}
+
     operation_id = f"access_check_{user_id}_{resource_id}"
-    
+
     try:
         result = evaluate_with_logging(policy, context, operation_id)
         return bool(result)
     except Exception:
         # Log and deny access on any error
         return False
+
 
 # Test the function
 result = check_access("alice", "doc1", "user.id == 'alice'")
@@ -505,6 +518,7 @@ from cel import evaluate
 from typing import Any, Optional, Dict
 import logging
 
+
 def safe_evaluate(expression: str, context: Optional[Dict[str, Any]] = None) -> Optional[Any]:
     """Safely evaluate a CEL expression with comprehensive error handling."""
     try:
@@ -522,9 +536,10 @@ def safe_evaluate(expression: str, context: Optional[Dict[str, Any]] = None) -> 
         logging.error(f"Unexpected CEL error: {e}")
         return None
 
+
 def test_error_handling():
     """Test various error scenarios."""
-    
+
     # Test parse errors
     try:
         evaluate("1 + + 2")
@@ -532,26 +547,27 @@ def test_error_handling():
     except ValueError:
         pass  # Expected
         # → ValueError caught (syntax error handled gracefully)
-    
-    # Test runtime errors  
+
+    # Test runtime errors
     try:
         evaluate("unknown_var", {})
         assert False, "Should have raised RuntimeError"
     except RuntimeError:
         pass  # Expected
         # → RuntimeError caught (undefined variable blocked safely)
-    
+
     # Test type errors
     try:
         evaluate("1 + 2u")  # Mixed signed/unsigned arithmetic
         assert False, "Should have raised TypeError"
     except (TypeError, ValueError):  # May be TypeError or ValueError depending on operation
-        pass  # Expected  
+        pass  # Expected
         # → Type error caught (incompatible types handled safely)
+
 
 def test_safe_evaluation():
     """Test safe evaluation wrapper."""
-    
+
     # Should return None for invalid expressions
     assert safe_evaluate("1 + + 2") is None
     # → None (parse error handled gracefully)
@@ -559,12 +575,13 @@ def test_safe_evaluation():
     # → None (runtime error converted to safe None)
     assert safe_evaluate("undefined_field", {}) is None
     # → None (undefined variable error handled without crash)
-    
+
     # Should work for valid expressions
     assert safe_evaluate("1 + 2") == 3
     # → 3 (valid expression evaluates correctly)
     assert safe_evaluate("name", {"name": "Alice"}) == "Alice"
     # → "Alice" (context variable accessed safely)
+
 
 # Run tests to verify everything works
 test_error_handling()

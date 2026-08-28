@@ -28,21 +28,16 @@ providing fast and safe CEL expression evaluation with seamless Python integrati
     
     **Nested data**
     ```python
-    user_data = {
-        "user": {
-            "name": "Alice",
-            "profile": {"verified": True, "role": "admin"}
-        }
-    }
-    
+    user_data = {"user": {"name": "Alice", "profile": {"verified": True, "role": "admin"}}}
+
     # Access nested fields and business logic
     name_check = evaluate("user.name == 'Alice'", user_data)
     assert name_check == True  # → True (name matches)
-    
+
     policy = "user.profile.verified && user.profile.role == 'admin'"
     admin_access = evaluate(policy, user_data)
     assert admin_access == True  # → True (verified admin user)
-    
+
     print("✓ Basic CEL evaluation working correctly")  # → ✓ Basic CEL evaluation working correctly
     ```
 
@@ -186,15 +181,26 @@ policy = """
 """
 
 # Test different scenarios
-admin_user = {"user": {"role": "admin", "verified": True, "id": "admin1"}, "resource": {"owner": "bob", "public": False}}
-owner_user = {"user": {"role": "user", "verified": True, "id": "alice"}, "resource": {"owner": "alice", "public": False}}
-guest_user = {"user": {"role": "guest", "verified": True, "id": "guest1"}, "resource": {"owner": "bob", "public": True}}
+admin_user = {
+    "user": {"role": "admin", "verified": True, "id": "admin1"},
+    "resource": {"owner": "bob", "public": False},
+}
+owner_user = {
+    "user": {"role": "user", "verified": True, "id": "alice"},
+    "resource": {"owner": "alice", "public": False},
+}
+guest_user = {
+    "user": {"role": "guest", "verified": True, "id": "guest1"},
+    "resource": {"owner": "bob", "public": True},
+}
 
-assert evaluate(policy, admin_user) == True   # → True (admin access granted)
-assert evaluate(policy, owner_user) == True   # → True (owner access granted)  
-assert evaluate(policy, guest_user) == True   # → True (public resource access)
+assert evaluate(policy, admin_user) == True  # → True (admin access granted)
+assert evaluate(policy, owner_user) == True  # → True (owner access granted)
+assert evaluate(policy, guest_user) == True  # → True (public resource access)
 
-print("✓ Access control policies working correctly")  # → ✓ Access control policies working correctly
+print(
+    "✓ Access control policies working correctly"
+)  # → ✓ Access control policies working correctly
 ```
 
 Simple, readable policies that handle complex business logic.

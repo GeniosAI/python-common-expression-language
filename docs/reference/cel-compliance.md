@@ -191,7 +191,7 @@ context.add_variable("name", "ALICE")
 context.add_variable("text", "hello world")
 
 # Use Python functions in CEL expressions
-result = evaluate('lower(name)', context)  # → "alice"
+result = evaluate("lower(name)", context)  # → "alice"
 result = evaluate('find(text, "world")', context)  # → 6
 ```
 
@@ -207,13 +207,14 @@ result = evaluate("int(value) + 1", {"value": "42"})  # → 43
 result = evaluate("1 + int(2u)")  # → 3 (safe alternative)
 
 # ✅ SAFE: Use has() checks for optional fields
-safe_expr = 'has(user.profile) && user.profile.verified'
+safe_expr = "has(user.profile) && user.profile.verified"
 result = evaluate(safe_expr, {"user": {}})  # → False (graceful handling)
 ```
 
 #### Production-Safe Error Handling
 ```python
 from cel import evaluate
+
 
 def safe_evaluate(expression, context):
     """Wrapper for production CEL evaluation with proper error handling."""
@@ -231,6 +232,7 @@ def safe_evaluate(expression, context):
         # Type mismatches - log and return safe default
         print(f"CEL type error: {e}")
         return False  # Fail-safe default
+
 
 # Usage in access control (always fail-safe)
 policy_expr = "user.verified && user.role == 'admin'"
@@ -425,7 +427,7 @@ except ValueError as e:
     print(f"Parse error: {e}")
 
 try:
-    evaluate('"mixed quotes\'', {})
+    evaluate("\"mixed quotes'", {})
 except ValueError as e:
     print(f"Parse error: {e}")
 ```

@@ -47,10 +47,7 @@ result = evaluate("age >= 18", {"age": 25})  # True
 # Complex expressions with context
 result = evaluate(
     'user.role == "admin" && "write" in permissions',
-    {
-        "user": {"role": "admin"},
-        "permissions": ["read", "write", "delete"]
-    }
+    {"user": {"role": "admin"}, "permissions": ["read", "write", "delete"]},
 )  # True
 ```
 
@@ -79,7 +76,7 @@ program = cel.compile("price * quantity > threshold")
 
 # Execute many times - much faster than repeated evaluate() calls
 result1 = program.execute({"price": 10, "quantity": 5, "threshold": 40})  # True
-result2 = program.execute({"price": 5, "quantity": 3, "threshold": 20})   # False
+result2 = program.execute({"price": 5, "quantity": 3, "threshold": 20})  # False
 ```
 
 ### Custom Functions
@@ -87,8 +84,10 @@ result2 = program.execute({"price": 5, "quantity": 3, "threshold": 20})   # Fals
 ```python
 from cel import Context, evaluate
 
+
 def calculate_discount(price, rate):
     return price * rate
+
 
 context = Context()
 context.add_function("calculate_discount", calculate_discount)
@@ -109,11 +108,13 @@ user.role == "admin" ||
 """
 
 context = Context()
-context.update({
-    "user": {"id": "alice", "role": "user"},
-    "resource": {"owner": "alice"},
-    "current_hour": 14  # 2 PM
-})
+context.update(
+    {
+        "user": {"id": "alice", "role": "user"},
+        "resource": {"owner": "alice"},
+        "current_hour": 14,  # 2 PM
+    }
+)
 
 access_granted = evaluate(policy, context)  # True
 ```

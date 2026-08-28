@@ -27,6 +27,7 @@ user.profile.verified if has("user.profile") else false
 ```python
 from cel import evaluate
 
+
 def safe_policy_evaluation(policy, context):
     # Validate required fields exist
     required_fields = ["user", "resource", "action"]
@@ -34,6 +35,7 @@ def safe_policy_evaluation(policy, context):
         if field not in context:
             raise ValueError(f"Missing required field: {field}")
     return evaluate(policy, context)
+
 
 # Test the function
 context = {"user": {"id": "alice"}, "resource": {"type": "file"}, "action": "read"}
@@ -70,11 +72,14 @@ has("user.role") && user.role == "admin" ||
 def require_policy(policy_name):
     def decorator(func):
         return func
+
     return decorator
+
 
 @require_policy("admin_only")
 def admin_endpoint():
     return {"data": "sensitive"}
+
 
 # Test the decorator
 decorated_func = require_policy("admin_only")(admin_endpoint)
@@ -101,21 +106,27 @@ class PolicyChecker:
     def __init__(self, policy):
         self.policy = policy
 
+
 def Depends(dependency):
     return dependency
+
 
 class MockApp:
     def get(self, path):
         def decorator(func):
             return func
+
         return decorator
+
 
 app = MockApp()
 require_admin = PolicyChecker("user.role == 'admin'")
 
+
 @app.get("/admin")
 async def admin_route(authorized: bool = Depends(require_admin)):
     return {"message": "Admin access granted"}
+
 
 # Test the setup
 assert require_admin.policy == "user.role == 'admin'"
@@ -140,19 +151,24 @@ assert Depends(require_admin) is require_admin
 def cel_permission_required(policy):
     def decorator(func):
         return func
+
     return decorator
+
 
 class JsonResponse:
     def __init__(self, data):
         self.data = data
 
+
 @cel_permission_required("user.is_staff && user.groups.contains('editors')")
 def edit_view(request, article_id):
     return JsonResponse({"message": f"Editing {article_id}"})
 
+
 # Test the setup
 class MockRequest:
     pass
+
 
 response = edit_view(MockRequest(), "123")
 # → JsonResponse({"message": "Editing 123"}) (Django view with CEL policy protection)
@@ -175,18 +191,10 @@ response = edit_view(MockRequest(), "123")
 from cel import evaluate
 
 # ✅ Efficient - flat structure
-context_flat = {
-    "user_role": "admin",
-    "resource_type": "database", 
-    "action": "delete"
-}
+context_flat = {"user_role": "admin", "resource_type": "database", "action": "delete"}
 
 # ❌ Less efficient - deeply nested
-context_nested = {
-    "request": {
-        "user": {"profile": {"role": "admin"}}
-    }
-}
+context_nested = {"request": {"user": {"profile": {"role": "admin"}}}}
 
 # Test both contexts work
 result1 = evaluate("user_role == 'admin'", context_flat)
@@ -207,11 +215,13 @@ result2 = evaluate("request.user.profile.role == 'admin'", context_nested)
 from functools import lru_cache
 from cel import evaluate
 
+
 class PolicyEngine:
     @lru_cache(maxsize=1000)
     def _evaluate_cached(self, policy, user_role, resource_public):
         context = {"user": {"role": user_role}, "resource": {"public": resource_public}}
         return evaluate(policy, context)
+
 
 # Test the cached evaluation
 engine = PolicyEngine()
@@ -239,16 +249,18 @@ import re
 # Define security constants
 MAX_EXPRESSION_LENGTH = 1000
 # Allow safe characters for CEL expressions
-ALLOWED_PATTERN = re.compile(r'^[a-zA-Z0-9_\s\.\(\)\[\]\{\}\+\-\*\/\<\>\=\!\&\|\,]+$')
+ALLOWED_PATTERN = re.compile(r"^[a-zA-Z0-9_\s\.\(\)\[\]\{\}\+\-\*\/\<\>\=\!\&\|\,]+$")
+
 
 def sanitize_expression(expression):
     if len(expression) > MAX_EXPRESSION_LENGTH:
         raise ValueError("Expression too long")
-    
+
     if not ALLOWED_PATTERN.match(expression):
         raise ValueError("Expression contains invalid characters")
-    
+
     return expression
+
 
 # Test the sanitization function
 valid_expr = "user.role == admin"  # Simplified to avoid quote escaping issues
@@ -279,14 +291,16 @@ except ValueError as e:
 ```python
 from cel import Context, evaluate
 
+
 def create_isolated_context(user_data, resource_data):
     # Only include explicitly allowed fields
     safe_user = {
         "id": user_data.get("id"),
         "role": user_data.get("role"),
-        "verified": user_data.get("verified", False)
+        "verified": user_data.get("verified", False),
     }
     return Context({"user": safe_user})
+
 
 # Test the isolation function
 user_data = {"id": "alice", "role": "admin", "password": "secret", "verified": True}
@@ -323,6 +337,7 @@ except Exception:
 ```python
 from cel import evaluate
 
+
 def test_admin_access_policy():
     context = {"user": {"role": "admin"}}
     policy = "user.role == 'admin'"
@@ -330,12 +345,14 @@ def test_admin_access_policy():
     # → True (admin access policy correctly grants permission)
     assert result == True
 
+
 def test_missing_context_handled_safely():
     context = {"user": {"id": "alice"}}  # No role
     safe_policy = 'has(user.role) && user.role == "admin"'
     result = evaluate(safe_policy, context)
     # → False (defensive policy safely handles missing role field)
     assert result == False
+
 
 # Run the tests
 test_admin_access_policy()
@@ -362,27 +379,28 @@ class MockResponse:
     def __init__(self, status_code):
         self.status_code = status_code
 
+
 class MockClient:
     def get(self, path, headers=None):
         # Simple mock: admin tokens get 200, others get 403
-        if headers and 'admin_token' in headers.get('Authorization', ''):
+        if headers and "admin_token" in headers.get("Authorization", ""):
             return MockResponse(200)
         return MockResponse(403)
 
+
 def test_protected_route_access():
     client = MockClient()
-    
+
     # Test admin access
-    response = client.get('/admin/users', 
-                         headers={'Authorization': 'Bearer admin_token'})
+    response = client.get("/admin/users", headers={"Authorization": "Bearer admin_token"})
     # → 200 (admin successfully granted access to protected route)
     assert response.status_code == 200
-    
+
     # Test user denial
-    response = client.get('/admin/users',
-                         headers={'Authorization': 'Bearer user_token'})
+    response = client.get("/admin/users", headers={"Authorization": "Bearer user_token"})
     # → 403 (unauthorized user correctly denied access)
     assert response.status_code == 403
+
 
 # Run the test
 test_protected_route_access()
@@ -408,6 +426,7 @@ from cel import evaluate
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+
 def evaluate_with_logging(expression, context, description=""):
     try:
         result = evaluate(expression, context)
@@ -416,6 +435,7 @@ def evaluate_with_logging(expression, context, description=""):
     except Exception as e:
         logger.error(f"CEL evaluation failed {description}: '{expression}' -> {e}")
         raise
+
 
 # Test the logging function
 context = {"user": {"role": "admin"}}
@@ -444,6 +464,7 @@ from cel import evaluate
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.WARNING)
 
+
 class MonitoredPolicyEngine:
     def evaluate_monitored(self, expression, context):
         start_time = time.perf_counter()
@@ -455,6 +476,7 @@ class MonitoredPolicyEngine:
             if duration > 0.001:  # 1ms threshold
                 logger.warning(f"Slow CEL evaluation: {expression[:50]}")
 
+
 # Test the monitored evaluation
 engine = MonitoredPolicyEngine()
 context = {"user": {"role": "admin"}}
@@ -464,9 +486,9 @@ result = engine.evaluate_monitored("user.role == 'admin'", context)
 # Test with different expressions to verify monitoring
 test_expressions = [
     ("user.role == 'admin'", True),
-    ("user.role == 'user'", False), 
+    ("user.role == 'user'", False),
     ("has(user.permissions) && 'admin' in user.permissions", False),
-    ("user.role in ['admin', 'manager', 'user']", True)
+    ("user.role in ['admin', 'manager', 'user']", True),
 ]
 
 for expression, expected in test_expressions:
@@ -480,7 +502,7 @@ print("✓ Monitored evaluation tracking multiple expressions")
 # Test monitoring behavior with slow expression (simulate complex logic)
 complex_context = {
     "user": {"role": "admin", "permissions": ["read", "write", "admin"]},
-    "resources": [{"id": i, "type": "document", "public": False} for i in range(100)]
+    "resources": [{"id": i, "type": "document", "public": False} for i in range(100)],
 }
 
 # This expression will be more complex and potentially trigger monitoring
@@ -517,9 +539,10 @@ Run this benchmark to understand CEL performance on your hardware:
 import time
 from cel import evaluate
 
+
 def benchmark_cel_performance():
     """Comprehensive CEL performance benchmark matching documented claims."""
-    
+
     # Test scenarios matching the performance table
     test_cases = [
         {
@@ -527,72 +550,68 @@ def benchmark_cel_performance():
             "expression": "x + y * 2",
             "context": {"x": 10, "y": 20},
             "expected": 50,
-            "iterations": 10000
+            "iterations": 10000,
         },
         {
-            "name": "Complex expressions", 
+            "name": "Complex expressions",
             "expression": "user.active && user.role in ['admin', 'editor'] && has(user.permissions) && user.permissions.size() > 0",
             "context": {
                 "user": {
                     "active": True,
-                    "role": "admin", 
-                    "permissions": ["read", "write", "delete"]
+                    "role": "admin",
+                    "permissions": ["read", "write", "delete"],
                 }
             },
             "expected": True,
-            "iterations": 5000
+            "iterations": 5000,
         },
         {
             "name": "Function calls",
             "expression": "double(x) + square(y)",
-            "context": {
-                "x": 5,
-                "y": 3,
-                "double": lambda x: x * 2,
-                "square": lambda x: x * x
-            },
+            "context": {"x": 5, "y": 3, "double": lambda x: x * 2, "square": lambda x: x * x},
             "expected": 19,  # double(5) + square(3) = 10 + 9
-            "iterations": 3000
-        }
+            "iterations": 3000,
+        },
     ]
-    
+
     results = []
-    
+
     for test_case in test_cases:
         print(f"\nBenchmarking: {test_case['name']}")
-        
+
         # Verify the expression works correctly
         result = evaluate(test_case["expression"], test_case["context"])
         # → Expected result (validates benchmark test case correctness)
         assert result == test_case["expected"], f"Expected {test_case['expected']}, got {result}"
-        
+
         # Warmup
         for _ in range(100):
             evaluate(test_case["expression"], test_case["context"])
-        
+
         # Benchmark
         start_time = time.perf_counter()
         for _ in range(test_case["iterations"]):
             evaluate(test_case["expression"], test_case["context"])
         end_time = time.perf_counter()
-        
+
         # Calculate metrics
         total_time = end_time - start_time
         avg_time_us = (total_time / test_case["iterations"]) * 1_000_000
         throughput = test_case["iterations"] / total_time
-        
+
         result_data = {
             "name": test_case["name"],
             "avg_time_us": avg_time_us,
             "throughput": throughput,
-            "iterations": test_case["iterations"]
+            "iterations": test_case["iterations"],
         }
         results.append(result_data)
-        
+
         print(f"  Average time: {avg_time_us:.1f} μs")
         print(f"  Throughput: {throughput:,.0f} ops/sec")
-    
+
     return results
+
 
 # Run the benchmark and display results
 if __name__ == "__main__":
@@ -600,11 +619,13 @@ if __name__ == "__main__":
     print("=" * 40)
     results = benchmark_cel_performance()
     # → Comprehensive performance metrics for production capacity planning
-    
+
     print("\nSummary:")
     print("-" * 40)
     for result in results:
-        print(f"{result['name']:20} | {result['avg_time_us']:6.1f} μs | {result['throughput']:8,.0f} ops/sec")
+        print(
+            f"{result['name']:20} | {result['avg_time_us']:6.1f} μs | {result['throughput']:8,.0f} ops/sec"
+        )
         # → Production performance baseline: enables capacity planning and SLA definition
 ```
 
@@ -629,23 +650,17 @@ validation_rules = [
     {
         "field": "database.port",
         "expression": "config.database.port > 0 && config.database.port < 65536",
-        "message": "Database port must be between 1 and 65535"
+        "message": "Database port must be between 1 and 65535",
     },
     {
-        "field": "ssl_required", 
+        "field": "ssl_required",
         "expression": 'config.ssl_enabled || env == "development"',
-        "message": "SSL must be enabled in production"
-    }
+        "message": "SSL must be enabled in production",
+    },
 ]
 
 # Test validation rules
-config_context = {
-    "config": {
-        "database": {"port": 5432},
-        "ssl_enabled": True
-    },
-    "env": "production"
-}
+config_context = {"config": {"database": {"port": 5432}, "ssl_enabled": True}, "env": "production"}
 
 # Validate all rules
 for rule in validation_rules:
@@ -657,9 +672,9 @@ for rule in validation_rules:
 invalid_context = {
     "config": {
         "database": {"port": 70000},  # Invalid port
-        "ssl_enabled": False
+        "ssl_enabled": False,
     },
-    "env": "production"
+    "env": "production",
 }
 
 port_rule = validation_rules[0]

@@ -145,12 +145,14 @@ We use a proactive detection system to monitor for upstream improvements:
 import pytest
 import cel
 
-# Example: Detecting when string functions become available  
+
+# Example: Detecting when string functions become available
 def test_lower_ascii_not_implemented(self):
     """When this test starts failing, lowerAscii() has been implemented."""
     with pytest.raises(RuntimeError, match="Undefined variable or function.*lowerAscii"):
         cel.evaluate('"HELLO".lowerAscii()')
         # → RuntimeError: Undefined variable or function 'lowerAscii'
+
 
 @pytest.mark.xfail(reason="String utilities not implemented in cel v0.11.1", strict=False)
 def test_lower_ascii_expected_behavior(self):
@@ -225,19 +227,21 @@ pub fn python_to_cel_value(obj: &PyAny) -> PyResult<Value> {
 from typing import Optional, Union, Dict, Any, Callable
 import cel
 
+
 # Type hints for public APIs
-def evaluate(expression: str, context: Optional[Union[Dict[str, Any], 'Context']] = None) -> Any:
+def evaluate(expression: str, context: Optional[Union[Dict[str, Any], "Context"]] = None) -> Any:
     """Evaluate a CEL expression with optional context."""
     pass
 
-# Comprehensive docstrings  
+
+# Comprehensive docstrings
 def add_function(self, name: str, func: Callable) -> None:
     """Add a Python function to the CEL evaluation context.
-    
+
     Args:
         name: Function name to use in CEL expressions
         func: Python callable to invoke
-        
+
     Example:
         >>> context = cel.Context()
         >>> context.add_function("double", lambda x: x * 2)

@@ -30,7 +30,7 @@ result = evaluate("[1, 2, 3]")
 assert result == [1, 2, 3]  # → [1, 2, 3] (native Python list creation)
 
 result = evaluate('{"name": "Alice", "age": 30}')
-assert result == {'name': 'Alice', 'age': 30}  # → {'name': 'Alice', 'age': 30} (native Python dict)
+assert result == {"name": "Alice", "age": 30}  # → {'name': 'Alice', 'age': 30} (native Python dict)
 
 print("✓ Basic expressions working correctly")
 ```
@@ -54,13 +54,10 @@ user = {
     "name": "Alice",
     "age": 30,
     "roles": ["user", "admin"],
-    "profile": {
-        "email": "alice@example.com",
-        "verified": True
-    }
+    "profile": {"email": "alice@example.com", "verified": True},
 }
 
-# String concatenation with conditionals  
+# String concatenation with conditionals
 adult_status = evaluate('user.age >= 18 ? "adult" : "minor"', {"user": user})
 result = evaluate('user.name + " is " + status', {"user": user, "status": adult_status})
 assert result == "Alice is adult"  # → "Alice is adult" (nested objects with conditional logic)
@@ -70,16 +67,20 @@ result = evaluate('"admin" in user.roles', {"user": user})
 assert result == True  # → True (membership testing in arrays)
 
 # Nested object access
-result = evaluate('user.profile.verified && user.profile.email.endsWith("@example.com")', {"user": user})
+result = evaluate(
+    'user.profile.verified && user.profile.email.endsWith("@example.com")', {"user": user}
+)
 assert result == True  # → True (deep object navigation with string methods)
 
 # Type conversions - CEL enforces type safety
 result = evaluate('user.name + " is " + string(user.age) + " years old"', {"user": user})
-assert result == "Alice is 30 years old"  # → "Alice is 30 years old" (explicit type conversion with string())
+assert (
+    result == "Alice is 30 years old"
+)  # → "Alice is 30 years old" (explicit type conversion with string())
 
 # ❌ This would fail - no automatic type conversion between incompatible types:
 # evaluate('user.name + " is " + user.age')  # TypeError: can't add string + int
-# 
+#
 # ✅ Always use explicit conversion for mixed types:
 # string(), int(), float(), double() functions
 
@@ -160,22 +161,15 @@ The REPL provides:
 from cel import evaluate
 
 config = {
-    "database": {
-        "host": "localhost",
-        "port": 5432,
-        "ssl": True
-    },
-    "cache": {
-        "enabled": True,
-        "ttl": 3600
-    }
+    "database": {"host": "localhost", "port": 5432, "ssl": True},
+    "cache": {"enabled": True, "ttl": 3600},
 }
 
 # Validate configuration
 checks = [
     ("has(database.host) && database.host != ''", "Database host required"),
     ("database.port > 0 && database.port < 65536", "Valid database port required"),
-    ("!cache.enabled || cache.ttl > 0", "Cache TTL must be positive when enabled")
+    ("!cache.enabled || cache.ttl > 0", "Cache TTL must be positive when enabled"),
 ]
 
 for expression, message in checks:
@@ -190,20 +184,18 @@ print("✓ Configuration validation working correctly")
 ```python
 from cel import evaluate
 
+
 def check_access_policy(user, resource, action):
     policy = """
     (user.role == "admin") ||
     (user.role == "owner" && resource.owner == user.id) ||
     (user.role == "member" && action == "read" && resource.public)
     """
-    
-    context = {
-        "user": user,
-        "resource": resource, 
-        "action": action
-    }
-    
+
+    context = {"user": user, "resource": resource, "action": action}
+
     return evaluate(policy, context)
+
 
 # Example usage
 user = {"id": "alice", "role": "member"}
@@ -212,7 +204,7 @@ resource = {"id": "doc1", "owner": "bob", "public": True}
 can_read = check_access_policy(user, resource, "read")
 assert can_read == True  # → True (member can read public resources)
 
-can_write = check_access_policy(user, resource, "write") 
+can_write = check_access_policy(user, resource, "write")
 assert can_write == False  # → False (member cannot write to others' resources)
 
 print("✓ Policy evaluation working correctly")
@@ -223,34 +215,44 @@ print("✓ Policy evaluation working correctly")
 ```python
 from cel import evaluate
 
+
 def transform_user_data(users):
     """Transform and filter user data using CEL expressions."""
-    
+
     # Filter active adult users
     active_adults = []
     for user in users:
         if evaluate("user.active && user.age >= 18", {"user": user}):
             active_adults.append(user)
-    
+
     # Generate display names
     for user in active_adults:
         display_name = evaluate(
-            'user.first_name + " " + user.last_name + " (" + user.role + ")"',
-            {"user": user}
+            'user.first_name + " " + user.last_name + " (" + user.role + ")"', {"user": user}
         )
         user["display_name"] = display_name
-    
+
     return active_adults
+
 
 # Example data
 users = [
     {"first_name": "Alice", "last_name": "Smith", "age": 30, "role": "admin", "active": True},
     {"first_name": "Bob", "last_name": "Jones", "age": 16, "role": "user", "active": True},
-    {"first_name": "Carol", "last_name": "Davis", "age": 25, "role": "user", "active": False}
+    {"first_name": "Carol", "last_name": "Davis", "age": 25, "role": "user", "active": False},
 ]
 
 result = transform_user_data(users)
-expected = [{'first_name': 'Alice', 'last_name': 'Smith', 'age': 30, 'role': 'admin', 'active': True, 'display_name': 'Alice Smith (admin)'}]
+expected = [
+    {
+        "first_name": "Alice",
+        "last_name": "Smith",
+        "age": 30,
+        "role": "admin",
+        "active": True,
+        "display_name": "Alice Smith (admin)",
+    }
+]
 assert result == expected  # → [Alice Smith (admin)] (filtered and transformed data)
 
 print("✓ Data transformation working correctly")
@@ -288,7 +290,7 @@ assert result == True  # → True (rich string method support)
 
 # Bytes operations
 result = evaluate("b'binary data'")
-assert result == b'binary data'  # → b'binary data' (native bytes support)
+assert result == b"binary data"  # → b'binary data' (native bytes support)
 assert isinstance(result, bytes)
 
 result = evaluate("b'hello'.size()")
@@ -302,7 +304,7 @@ result = evaluate("[1, 2, 3].size()")
 assert result == 3  # → 3 (list length)
 
 result = evaluate('{"name": "Alice", "age": 30}')
-assert result == {'name': 'Alice', 'age': 30}  # → {'name': 'Alice', 'age': 30} (maps as dicts)
+assert result == {"name": "Alice", "age": 30}  # → {'name': 'Alice', 'age': 30} (maps as dicts)
 assert isinstance(result, dict)
 
 result = evaluate('{"a": 1, "b": 2}.size()')
@@ -340,24 +342,27 @@ CEL expressions can fail for various reasons. Always handle errors appropriately
 ```python
 from cel import evaluate
 
+
 # Most idiomatic: Let exceptions bubble up naturally
 def evaluate_expression(expression: str, context: dict = None):
     """Evaluate expression with proper exception handling."""
     return evaluate(expression, context or {})
 
-# For cases where you need fallback values  
-def evaluate_with_default(expression: str, context: dict = None, default = None):
+
+# For cases where you need fallback values
+def evaluate_with_default(expression: str, context: dict = None, default=None):
     """Evaluate with fallback value on errors."""
     try:
         return evaluate(expression, context or {})
     except (ValueError, TypeError, RuntimeError):
         return default
 
+
 # Result-like pattern for detailed error information
 def safe_evaluate(expression: str, context: dict = None):
     """
     Evaluate with detailed success/error information.
-    
+
     Returns: (success: bool, result: Any, error_message: str)
     """
     try:
@@ -369,6 +374,7 @@ def safe_evaluate(expression: str, context: dict = None):
         return (False, None, f"Type error: {e}")
     except RuntimeError as e:
         return (False, None, f"Runtime error: {e}")
+
 
 # Examples demonstrating idiomatic error handling
 context = {"age": 25, "name": "Alice"}
@@ -382,9 +388,7 @@ except (ValueError, TypeError, RuntimeError) as e:
 
 # Fallback pattern for non-critical features
 display_name = evaluate_with_default(
-    'user.display_name', 
-    {"user": {"first_name": "John"}}, 
-    default="Unknown User"
+    "user.display_name", {"user": {"first_name": "John"}}, default="Unknown User"
 )
 assert display_name == "Unknown User"  # → "Unknown User" (missing field)
 
@@ -394,10 +398,11 @@ assert success == False
 assert result is None
 assert "Runtime error" in error
 
-success, result, error = safe_evaluate("age * 2", context)  
+success, result, error = safe_evaluate("age * 2", context)
 assert success == True
 assert result == 50
 assert error == ""
+
 
 # Practical example: validation utility
 def validate_user_rules(rules: list[str], user_context: dict) -> dict[str, bool]:
@@ -410,13 +415,14 @@ def validate_user_rules(rules: list[str], user_context: dict) -> dict[str, bool]
             results[rule] = False  # Invalid rules are considered failed
     return results
 
+
 # Test business rules validation
 user = {"age": 25, "role": "member", "verified": True}
 business_rules = [
-    "age >= 18",                    # Valid rule
-    "role == 'admin'",              # Valid rule (false result)
-    "verified && age > 21",         # Valid rule  
-    "invalid_syntax + +",           # Invalid syntax
+    "age >= 18",  # Valid rule
+    "role == 'admin'",  # Valid rule (false result)
+    "verified && age > 21",  # Valid rule
+    "invalid_syntax + +",  # Invalid syntax
 ]
 
 rule_results = validate_user_rules(business_rules, user)

@@ -23,12 +23,13 @@ CEL enables sophisticated, multi-factor access control policies that handle comp
 from cel import evaluate
 from datetime import datetime
 
+
 def check_advanced_access_policy(user, resource, action, current_time=None):
     """Enterprise-grade multi-factor access control policy."""
-    
+
     if current_time is None:
         current_time = datetime.now()
-    
+
     # Advanced policy with multiple business rules:
     # 1. Admins can do anything, anytime
     # 2. Resource owners have full access during business hours
@@ -46,37 +47,38 @@ def check_advanced_access_policy(user, resource, action, current_time=None):
     (action == "read" && resource.public && 
      (user.role != "guest" || is_business_hours(current_hour)))
     """
-    
+
     def is_business_hours(hour):
         return 9 <= hour <= 17
-    
+
     context = {
         "user": user,
-        "resource": resource, 
+        "resource": resource,
         "action": action,
         "current_hour": current_time.hour,
-        "is_business_hours": is_business_hours
+        "is_business_hours": is_business_hours,
     }
-    
+
     return evaluate(policy, context)
+
 
 # Example: Financial data access
 financial_user = {
-    "id": "analyst1", 
+    "id": "analyst1",
     "role": "analyst",
     "department": "finance",
     "clearance_level": 3,
-    "verified": True
+    "verified": True,
 }
 
 financial_resource = {
     "id": "q4_report",
     "owner": "cfo",
-    "department": "finance", 
+    "department": "finance",
     "sensitivity_level": 3,
     "external_access_allowed": False,
     "approved_external_users": [],
-    "public": False
+    "public": False,
 }
 
 # Test access during business hours
@@ -84,14 +86,18 @@ business_hour_time = datetime.now().replace(hour=14)  # 2 PM
 access_granted = check_advanced_access_policy(
     financial_user, financial_resource, "read", business_hour_time
 )
-assert access_granted == True  # → Access GRANTED: Department member reading financial data during business hours
+assert (
+    access_granted == True
+)  # → Access GRANTED: Department member reading financial data during business hours
 
 # Test access after hours (should be denied for non-admin)
 after_hours_time = datetime.now().replace(hour=22)  # 10 PM
 access_denied = check_advanced_access_policy(
     financial_user, financial_resource, "read", after_hours_time
 )
-assert access_denied == False  # → Access DENIED: Time-based security - financial data restricted after business hours
+assert (
+    access_denied == False
+)  # → Access DENIED: Time-based security - financial data restricted after business hours
 
 print("✓ Advanced access control policies working correctly")
 ```
@@ -103,15 +109,9 @@ print("✓ Advanced access control policies working correctly")
 ```python
 def check_hierarchical_access(user, resource, action):
     """Implement role hierarchy where higher roles inherit lower permissions."""
-    
-    role_hierarchy = {
-        "guest": 0,
-        "user": 1, 
-        "member": 2,
-        "manager": 3,
-        "admin": 4
-    }
-    
+
+    role_hierarchy = {"guest": 0, "user": 1, "member": 2, "manager": 3, "admin": 4}
+
     policy = """
     user.role_level >= required_level &&
     (
@@ -121,15 +121,16 @@ def check_hierarchical_access(user, resource, action):
         (action in ["read", "write", "delete"] && user.role_level >= 3)
     )
     """
-    
+
     context = {
         "user": {**user, "role_level": role_hierarchy.get(user["role"], 0)},
         "resource": resource,
         "action": action,
-        "required_level": 0  # Minimum level to access system
+        "required_level": 0,  # Minimum level to access system
     }
-    
+
     return evaluate(policy, context)
+
 
 # Test the hierarchical access control
 guest_user = {"role": "guest", "id": "guest1"}
@@ -143,9 +144,11 @@ private_resource = {"public": False, "owner": "user1", "collaborators": ["guest1
 result = check_hierarchical_access(guest_user, public_resource, "read")
 assert result == True  # → Access GRANTED: Public resources accessible to all authenticated users
 
-# Test 2: Guest accessing private resource (denied)  
+# Test 2: Guest accessing private resource (denied)
 result = check_hierarchical_access(guest_user, private_resource, "write")
-assert result == False  # → Access DENIED: Insufficient role level - guests cannot write to private resources
+assert (
+    result == False
+)  # → Access DENIED: Insufficient role level - guests cannot write to private resources
 
 # Test 3: User accessing owned resource
 result = check_hierarchical_access(user_account, private_resource, "write")
@@ -157,7 +160,9 @@ assert result == True  # → Access GRANTED: Management role hierarchy allows de
 
 # Test 5: Guest as collaborator can read
 result = check_hierarchical_access(guest_user, private_resource, "read")
-assert result == True  # → Access GRANTED: Collaboration permissions override role restrictions for read access
+assert (
+    result == True
+)  # → Access GRANTED: Collaboration permissions override role restrictions for read access
 
 print("✓ Hierarchical access control working correctly")
 ```
@@ -167,10 +172,10 @@ print("✓ Hierarchical access control working correctly")
 ```python
 def check_time_based_access(user, resource, action, current_time=None):
     """Implement time-based access restrictions."""
-    
+
     if current_time is None:
         current_time = datetime.now()
-    
+
     policy = """
     user.role == "admin" ||
     (
@@ -182,16 +187,17 @@ def check_time_based_access(user, resource, action, current_time=None):
         )
     )
     """
-    
+
     context = {
         "user": user,
         "resource": resource,
         "action": action,
         "hour": current_time.hour,
-        "day_of_week": current_time.weekday()
+        "day_of_week": current_time.weekday(),
     }
-    
+
     return evaluate(policy, context)
+
 
 # Test time-based access control
 standard_user = {"role": "user", "schedule": "standard"}
@@ -202,7 +208,9 @@ test_resource = {"id": "test_doc"}
 # Test 1: Standard user during business hours
 business_time = datetime.now().replace(hour=14)  # 2 PM
 result = check_time_based_access(standard_user, test_resource, "read", business_time)
-assert result == True  # → Access GRANTED: Standard work schedule allows access during 9-5 business hours
+assert (
+    result == True
+)  # → Access GRANTED: Standard work schedule allows access during 9-5 business hours
 
 # Test 2: Standard user after hours (denied)
 after_hours = datetime.now().replace(hour=22)  # 10 PM
@@ -226,7 +234,7 @@ print("✓ Time-based access control working correctly")
 ```python
 def check_resource_specific_access(user, resource, action):
     """Different rules for different resource types."""
-    
+
     policies = {
         "document": """
             user.role == "admin" ||
@@ -234,36 +242,36 @@ def check_resource_specific_access(user, resource, action):
             (resource.public && action == "read") ||
             (user.id in resource.collaborators && action in ["read", "comment"])
         """,
-        
         "database": """
             user.role == "admin" ||
             (user.role == "developer" && action in ["read", "write"]) ||
             (user.role == "analyst" && action == "read")
         """,
-        
         "system": """
             user.role == "admin" ||
             (user.role == "operator" && action in ["read", "restart"]) ||
             (user.role == "monitor" && action == "read")
-        """
+        """,
     }
-    
+
     policy = policies.get(resource.get("type", "document"), policies["document"])
-    
-    context = {
-        "user": user,
-        "resource": resource,
-        "action": action
-    }
-    
+
+    context = {"user": user, "resource": resource, "action": action}
+
     return evaluate(policy, context)
+
 
 # Test resource-specific access control
 developer = {"role": "developer", "id": "dev1"}
 analyst = {"role": "analyst", "id": "analyst1"}
 operator = {"role": "operator", "id": "ops1"}
 
-document_resource = {"type": "document", "owner": "dev1", "public": False, "collaborators": ["analyst1"]}
+document_resource = {
+    "type": "document",
+    "owner": "dev1",
+    "public": False,
+    "collaborators": ["analyst1"],
+}
 database_resource = {"type": "database", "name": "prod_db"}
 system_resource = {"type": "system", "name": "web_server"}
 
@@ -290,7 +298,9 @@ result = check_resource_specific_access(analyst, document_resource, "read")
 assert result == True  # → Access GRANTED: Collaborator status grants read access regardless of role
 
 result = check_resource_specific_access(analyst, document_resource, "write")
-assert result == False  # → Access DENIED: Collaborator read-only access - ownership required for writes
+assert (
+    result == False
+)  # → Access DENIED: Collaborator read-only access - ownership required for writes
 
 print("✓ Resource-specific access control working correctly")
 ```
@@ -305,42 +315,45 @@ One of the most common real-world applications of CEL is in Kubernetes Validatin
 from cel import evaluate
 import json
 
+
 def validate_kubernetes_pod(pod_spec, policy_expression):
     """Validate a Kubernetes Pod specification using CEL expressions."""
-    
+
     # Normalize the pod spec to ensure consistent structure for policy evaluation
     normalized_spec = normalize_pod_spec(pod_spec)
-    
+
     context = {
         "object": normalized_spec,
         "request": {
             "operation": "CREATE",
             "userInfo": {
                 "username": "developer@company.com",
-                "groups": ["developers", "system:authenticated"]
-            }
-        }
+                "groups": ["developers", "system:authenticated"],
+            },
+        },
     }
-    
+
     try:
         return evaluate(policy_expression, context)
     except Exception as e:
         print(f"Policy validation failed: {e}")
         return False
 
+
 def normalize_pod_spec(pod_spec):
     """Normalize pod spec to ensure consistent structure."""
     normalized = pod_spec.copy()
-    
+
     # Ensure securityContext exists with defaults
     if "securityContext" not in normalized["spec"]:
         normalized["spec"]["securityContext"] = {}
-    
+
     # Set default runAsUser if not specified (1000 = non-root)
     if "runAsUser" not in normalized["spec"]["securityContext"]:
         normalized["spec"]["securityContext"]["runAsUser"] = 1000
-        
+
     return normalized
+
 
 # Example 1: Security Policy - Require non-root containers
 # With normalized structure, we can use simple, reliable expressions
@@ -355,48 +368,43 @@ secure_pod = {
     "metadata": {"name": "secure-app"},
     "spec": {
         "securityContext": {"runAsUser": 1000},
-        "containers": [{
-            "name": "app",
-            "image": "nginx:1.21"
-        }]
-    }
+        "containers": [{"name": "app", "image": "nginx:1.21"}],
+    },
 }
 
 # Test secure pod passes validation
-assert validate_kubernetes_pod(secure_pod, pod_security_policy) == True  # → SECURITY CHECK PASSED: Non-root user (1000) complies with security policy
+assert (
+    validate_kubernetes_pod(secure_pod, pod_security_policy) == True
+)  # → SECURITY CHECK PASSED: Non-root user (1000) complies with security policy
 
 # Invalid pod - runs as root
 insecure_pod = {
-    "apiVersion": "v1", 
+    "apiVersion": "v1",
     "kind": "Pod",
     "metadata": {"name": "insecure-app"},
     "spec": {
         "securityContext": {"runAsUser": 0},  # Root user!
-        "containers": [{
-            "name": "app",
-            "image": "nginx:1.21"
-        }]
-    }
+        "containers": [{"name": "app", "image": "nginx:1.21"}],
+    },
 }
 
 # Test insecure pod fails validation
-assert validate_kubernetes_pod(insecure_pod, pod_security_policy) == False  # → SECURITY VIOLATION: Root user (UID 0) blocked by admission policy
+assert (
+    validate_kubernetes_pod(insecure_pod, pod_security_policy) == False
+)  # → SECURITY VIOLATION: Root user (UID 0) blocked by admission policy
 
 # Pod with no security context - should default to non-root and pass
 default_pod = {
     "apiVersion": "v1",
-    "kind": "Pod", 
+    "kind": "Pod",
     "metadata": {"name": "default-app"},
-    "spec": {
-        "containers": [{
-            "name": "app",
-            "image": "nginx:1.21"
-        }]
-    }
+    "spec": {"containers": [{"name": "app", "image": "nginx:1.21"}]},
 }
 
 # Test default pod gets normalized and passes validation
-assert validate_kubernetes_pod(default_pod, pod_security_policy) == True  # → SECURITY CHECK PASSED: Default non-root user applied through normalization
+assert (
+    validate_kubernetes_pod(default_pod, pod_security_policy) == True
+)  # → SECURITY CHECK PASSED: Default non-root user applied through normalization
 
 print("✓ Kubernetes pod security validation working correctly")
 ```
@@ -406,7 +414,7 @@ print("✓ Kubernetes pod security validation working correctly")
 ```python
 def validate_resource_limits(workload_spec):
     """Enforce resource limits and requests for production workloads."""
-    
+
     # Policy: All containers must have CPU and memory limits set
     # and requests must be at least 50% of limits
     resource_policy = """
@@ -420,29 +428,34 @@ def validate_resource_limits(workload_spec):
             has(container.resources.requests.memory)
         )
     """
-    
+
     context = {"object": workload_spec}
     return evaluate(resource_policy, context)
+
 
 # Valid deployment with proper resource management
 deployment_with_limits = {
     "apiVersion": "apps/v1",
-    "kind": "Deployment", 
+    "kind": "Deployment",
     "metadata": {"name": "web-app"},
     "spec": {
-        "containers": [{
-            "name": "web",
-            "image": "nginx:1.21",
-            "resources": {
-                "limits": {"cpu": "200m", "memory": "256Mi"},
-                "requests": {"cpu": "100m", "memory": "128Mi"}  # 50% of limits
+        "containers": [
+            {
+                "name": "web",
+                "image": "nginx:1.21",
+                "resources": {
+                    "limits": {"cpu": "200m", "memory": "256Mi"},
+                    "requests": {"cpu": "100m", "memory": "128Mi"},  # 50% of limits
+                },
             }
-        }]
-    }
+        ]
+    },
 }
 
 # Test deployment passes resource validation
-assert validate_resource_limits(deployment_with_limits) == True  # → RESOURCE POLICY PASSED: All containers have proper CPU/memory limits and requests
+assert (
+    validate_resource_limits(deployment_with_limits) == True
+)  # → RESOURCE POLICY PASSED: All containers have proper CPU/memory limits and requests
 
 print("✓ Kubernetes resource limit validation working correctly")
 ```
@@ -452,7 +465,7 @@ print("✓ Kubernetes resource limit validation working correctly")
 ```python
 def validate_network_policy(network_policy_spec):
     """Validate NetworkPolicy configurations for security compliance."""
-    
+
     # Policy: Ensure network policies have both ingress and egress rules
     # and don't allow unrestricted access
     network_security_policy = """
@@ -465,9 +478,10 @@ def validate_network_policy(network_policy_spec):
             !has(rule.to) || size(rule.to) > 0
         )
     """
-    
+
     context = {"object": network_policy_spec}
     return evaluate(network_security_policy, context)
+
 
 # Valid network policy with restricted access
 secure_network_policy = {
@@ -476,19 +490,25 @@ secure_network_policy = {
     "metadata": {"name": "web-netpol"},
     "spec": {
         "podSelector": {"matchLabels": {"app": "web"}},
-        "ingress": [{
-            "from": [{"podSelector": {"matchLabels": {"app": "frontend"}}}],
-            "ports": [{"protocol": "TCP", "port": 80}]
-        }],
-        "egress": [{
-            "to": [{"podSelector": {"matchLabels": {"app": "database"}}}],
-            "ports": [{"protocol": "TCP", "port": 5432}]
-        }]
-    }
+        "ingress": [
+            {
+                "from": [{"podSelector": {"matchLabels": {"app": "frontend"}}}],
+                "ports": [{"protocol": "TCP", "port": 80}],
+            }
+        ],
+        "egress": [
+            {
+                "to": [{"podSelector": {"matchLabels": {"app": "database"}}}],
+                "ports": [{"protocol": "TCP", "port": 5432}],
+            }
+        ],
+    },
 }
 
 # Test network policy passes validation
-assert validate_network_policy(secure_network_policy) == True  # → NETWORK SECURITY PASSED: Ingress/egress rules properly restrict traffic flow
+assert (
+    validate_network_policy(secure_network_policy) == True
+)  # → NETWORK SECURITY PASSED: Ingress/egress rules properly restrict traffic flow
 
 print("✓ Kubernetes network policy validation working correctly")
 ```
@@ -498,7 +518,7 @@ print("✓ Kubernetes network policy validation working correctly")
 ```python
 def validate_custom_resource(custom_resource_spec, crd_validation_rules):
     """Validate custom resources using CEL expressions."""
-    
+
     # Example: Validate a custom Application resource
     app_validation_policy = """
         has(object.spec.replicas) && object.spec.replicas >= 1 &&
@@ -508,9 +528,10 @@ def validate_custom_resource(custom_resource_spec, crd_validation_rules):
         object.spec.environment in ['dev', 'staging', 'prod'] &&
         (object.spec.environment == 'prod' ? object.spec.replicas >= 3 : true)
     """
-    
+
     context = {"object": custom_resource_spec}
     return evaluate(app_validation_policy, context)
+
 
 # Valid production application
 production_app = {
@@ -520,25 +541,29 @@ production_app = {
     "spec": {
         "replicas": 3,  # Production requires >= 3 replicas
         "image": "payment-service:v1.2.3",  # Specific version, not latest
-        "environment": "prod"
-    }
+        "environment": "prod",
+    },
 }
 
-# Valid development application  
+# Valid development application
 development_app = {
     "apiVersion": "platform.company.com/v1",
-    "kind": "Application", 
+    "kind": "Application",
     "metadata": {"name": "test-service"},
     "spec": {
         "replicas": 1,  # Dev can have 1 replica
         "image": "test-service:v0.1.0",
-        "environment": "dev"
-    }
+        "environment": "dev",
+    },
 }
 
 # Test both applications pass validation
-assert validate_custom_resource(production_app, {}) == True  # → COMPLIANCE PASSED: Production app meets replica and versioning requirements
-assert validate_custom_resource(development_app, {}) == True  # → COMPLIANCE PASSED: Development app allows lower replica count with proper versioning
+assert (
+    validate_custom_resource(production_app, {}) == True
+)  # → COMPLIANCE PASSED: Production app meets replica and versioning requirements
+assert (
+    validate_custom_resource(development_app, {}) == True
+)  # → COMPLIANCE PASSED: Development app allows lower replica count with proper versioning
 
 print("✓ Kubernetes custom resource validation working correctly")
 ```
@@ -550,24 +575,24 @@ from cel import evaluate, Context
 from datetime import datetime
 import re
 
+
 class KubernetesPolicyEngine:
     """Production-grade policy engine for Kubernetes admission control."""
-    
+
     def __init__(self):
         self.policies = {}
         self.load_default_policies()
-    
+
     def load_default_policies(self):
         """Load standard security and compliance policies."""
-        
+
         self.policies = {
             "pod-security": {
                 "expression": """
                     object.spec.securityContext.runAsUser != 0
                 """,
-                "message": "Pods must not run as root user"
+                "message": "Pods must not run as root user",
             },
-            
             "resource-quotas": {
                 "expression": """
                     object.spec.containers.all(container,
@@ -575,9 +600,8 @@ class KubernetesPolicyEngine:
                         size(container.resources.requests) > 0
                     )
                 """,
-                "message": "All containers must specify resource limits and requests"
+                "message": "All containers must specify resource limits and requests",
             },
-            
             "image-policy": {
                 "expression": """
                     object.spec.containers.all(container,
@@ -586,9 +610,8 @@ class KubernetesPolicyEngine:
                         container.image.contains(':v')
                     )
                 """,
-                "message": "Images must be from company registry with semantic versioning"
+                "message": "Images must be from company registry with semantic versioning",
             },
-            
             "namespace-compliance": {
                 "expression": """
                     has(object.metadata.namespace) &&
@@ -596,31 +619,31 @@ class KubernetesPolicyEngine:
                     (object.metadata.namespace.startsWith('prod-') ? 
                         (has(object.metadata.labels) && 'compliance.company.com/approved' in object.metadata.labels) : true)
                 """,
-                "message": "Production namespaces require compliance approval labels"
-            }
+                "message": "Production namespaces require compliance approval labels",
+            },
         }
-    
+
     def normalize_resource_spec(self, resource_spec):
         """Normalize resource spec to ensure consistent structure for policy evaluation."""
         normalized = resource_spec.copy()
-        
+
         # Ensure spec exists
         if "spec" not in normalized:
             normalized["spec"] = {}
-            
+
         # For Pods, ensure securityContext with defaults
         if normalized.get("kind") == "Pod":
             if "securityContext" not in normalized["spec"]:
                 normalized["spec"]["securityContext"] = {}
-            
+
             # Set default runAsUser if not specified (1000 = non-root)
             if "runAsUser" not in normalized["spec"]["securityContext"]:
                 normalized["spec"]["securityContext"]["runAsUser"] = 1000
-                
+
             # Ensure containers list exists
             if "containers" not in normalized["spec"]:
                 normalized["spec"]["containers"] = []
-                
+
             # Normalize container resources
             for container in normalized["spec"]["containers"]:
                 if "resources" not in container:
@@ -629,61 +652,68 @@ class KubernetesPolicyEngine:
                     container["resources"]["limits"] = {}
                 if "requests" not in container["resources"]:
                     container["resources"]["requests"] = {}
-        
+
         # Ensure metadata and labels exist
         if "metadata" not in normalized:
             normalized["metadata"] = {}
         if "labels" not in normalized["metadata"]:
             normalized["metadata"]["labels"] = {}
-            
+
         return normalized
-    
+
     def validate_admission(self, resource_spec, operation="CREATE", user_info=None):
         """Validate a Kubernetes resource admission request."""
-        
+
         if user_info is None:
             user_info = {"username": "system", "groups": ["system:authenticated"]}
-        
+
         # Normalize the resource to ensure consistent structure for policy evaluation
         normalized_spec = self.normalize_resource_spec(resource_spec)
-        
+
         context = Context()
         context.add_variable("object", normalized_spec)
-        context.add_variable("operation", operation) 
+        context.add_variable("operation", operation)
         context.add_variable("userInfo", user_info)
         context.add_variable("timestamp", datetime.now().isoformat())
-        
+
         results = []
-        
+
         for policy_name, policy_config in self.policies.items():
             try:
                 # Skip certain policies for system users
-                if (user_info.get("username", "").startswith("system:") and 
-                    policy_name == "image-policy"):
+                if (
+                    user_info.get("username", "").startswith("system:")
+                    and policy_name == "image-policy"
+                ):
                     continue
-                    
+
                 result = evaluate(policy_config["expression"], context)
-                results.append({
-                    "policy": policy_name,
-                    "allowed": result,
-                    "message": policy_config["message"] if not result else "Policy passed"
-                })
-                
+                results.append(
+                    {
+                        "policy": policy_name,
+                        "allowed": result,
+                        "message": policy_config["message"] if not result else "Policy passed",
+                    }
+                )
+
             except Exception as e:
-                results.append({
-                    "policy": policy_name,
-                    "allowed": False,
-                    "message": f"Policy evaluation error: {e}"
-                })
-        
+                results.append(
+                    {
+                        "policy": policy_name,
+                        "allowed": False,
+                        "message": f"Policy evaluation error: {e}",
+                    }
+                )
+
         # Overall admission decision
         admission_allowed = all(r["allowed"] for r in results)
-        
+
         return {
             "allowed": admission_allowed,
             "message": "Admission approved" if admission_allowed else "Admission denied",
-            "policy_results": results
+            "policy_results": results,
         }
+
 
 # Test the production policy engine
 policy_engine = KubernetesPolicyEngine()
@@ -695,42 +725,46 @@ compliant_pod = {
     "metadata": {
         "name": "web-app",
         "namespace": "prod-payments",
-        "labels": {"compliance.company.com/approved": "true"}
+        "labels": {"compliance.company.com/approved": "true"},
     },
     "spec": {
         "securityContext": {"runAsUser": 1000},
-        "containers": [{
-            "name": "app",
-            "image": "company-registry.com/web-app:v1.2.3",
-            "resources": {
-                "limits": {"cpu": "500m", "memory": "256Mi"},
-                "requests": {"cpu": "250m", "memory": "128Mi"}
+        "containers": [
+            {
+                "name": "app",
+                "image": "company-registry.com/web-app:v1.2.3",
+                "resources": {
+                    "limits": {"cpu": "500m", "memory": "256Mi"},
+                    "requests": {"cpu": "250m", "memory": "128Mi"},
+                },
             }
-        }]
-    }
+        ],
+    },
 }
 
 # Test admission
 result = policy_engine.validate_admission(
-    compliant_pod, 
+    compliant_pod,
     operation="CREATE",
-    user_info={"username": "developer@company.com", "groups": ["developers"]}
+    user_info={"username": "developer@company.com", "groups": ["developers"]},
 )
 
 print(f"Admission allowed: {result['allowed']}")
 print(f"Message: {result['message']}")
-for policy_result in result['policy_results']:
-    status = "✓" if policy_result['allowed'] else "✗"
+for policy_result in result["policy_results"]:
+    status = "✓" if policy_result["allowed"] else "✗"
     print(f"  {status} {policy_result['policy']}: {policy_result['message']}")
 
 # The compliant pod should pass all policies
-if not result['allowed']:
+if not result["allowed"]:
     print(f"❌ Admission denied: {result['message']}")
-    for policy_result in result['policy_results']:
-        if not policy_result['allowed']:
+    for policy_result in result["policy_results"]:
+        if not policy_result["allowed"]:
             print(f"  Failed policy: {policy_result['policy']} - {policy_result['message']}")
 
-assert result['allowed'] == True, f"Expected admission to be allowed, but got: {result}"  # → ADMISSION APPROVED: Pod meets all security, resource, and compliance policies
+assert result["allowed"] == True, (
+    f"Expected admission to be allowed, but got: {result}"
+)  # → ADMISSION APPROVED: Pod meets all security, resource, and compliance policies
 
 print("\n✓ Kubernetes production policy engine working correctly")
 ```
@@ -741,9 +775,10 @@ print("\n✓ Kubernetes production policy engine working correctly")
 import pytest
 from cel import evaluate
 
+
 def test_kubernetes_pod_security_policies():
     """Comprehensive test suite for Kubernetes pod security policies."""
-    
+
     def check_pod_security(pod_spec):
         policy = """
             (!has(object.spec.securityContext) || 
@@ -756,45 +791,48 @@ def test_kubernetes_pod_security_policies():
             )
         """
         return evaluate(policy, {"object": pod_spec})
-    
+
     # Test case 1: Secure pod should pass
     secure_pod = {
         "spec": {
             "securityContext": {"runAsUser": 1000},
-            "containers": [{"name": "app", "image": "nginx"}]
+            "containers": [{"name": "app", "image": "nginx"}],
         }
     }
-    assert check_pod_security(secure_pod) == True  # → SECURITY VALID: Non-root user and no privileged containers
-    
+    assert (
+        check_pod_security(secure_pod) == True
+    )  # → SECURITY VALID: Non-root user and no privileged containers
+
     # Test case 2: Root user should fail
     root_pod = {
         "spec": {
             "securityContext": {"runAsUser": 0},
-            "containers": [{"name": "app", "image": "nginx"}]
+            "containers": [{"name": "app", "image": "nginx"}],
         }
     }
-    assert check_pod_security(root_pod) == False  # → SECURITY VIOLATION: Root user (UID 0) poses container escape risk
-    
+    assert (
+        check_pod_security(root_pod) == False
+    )  # → SECURITY VIOLATION: Root user (UID 0) poses container escape risk
+
     # Test case 3: Privileged container should fail
     privileged_pod = {
         "spec": {
             "securityContext": {"runAsUser": 1000},
-            "containers": [{
-                "name": "app", 
-                "image": "nginx",
-                "securityContext": {"privileged": True}
-            }]
+            "containers": [
+                {"name": "app", "image": "nginx", "securityContext": {"privileged": True}}
+            ],
         }
     }
-    assert check_pod_security(privileged_pod) == False  # → SECURITY VIOLATION: Privileged containers bypass kernel security
-    
+    assert (
+        check_pod_security(privileged_pod) == False
+    )  # → SECURITY VIOLATION: Privileged containers bypass kernel security
+
     # Test case 4: Missing security context should pass (default behavior)
-    default_pod = {
-        "spec": {
-            "containers": [{"name": "app", "image": "nginx"}]
-        }
-    }
-    assert check_pod_security(default_pod) == True  # → SECURITY ACCEPTABLE: Default runtime security context applied
+    default_pod = {"spec": {"containers": [{"name": "app", "image": "nginx"}]}}
+    assert (
+        check_pod_security(default_pod) == True
+    )  # → SECURITY ACCEPTABLE: Default runtime security context applied
+
 
 # Run the test
 test_kubernetes_pod_security_policies()

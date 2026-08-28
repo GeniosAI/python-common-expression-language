@@ -85,9 +85,7 @@ Execute the compiled program with the given context.
 import cel
 
 program = cel.compile("user.name + ' is ' + user.role")
-result = program.execute({
-    "user": {"name": "Alice", "role": "admin"}
-})
+result = program.execute({"user": {"name": "Alice", "role": "admin"}})
 assert result == "Alice is admin"
 ```
 
@@ -111,13 +109,13 @@ assert result == "Hello, World!"
 import cel
 
 # Access control policy - compiled once at startup
-policy = cel.compile(
-    'user.role == "admin" || resource.owner == user.id'
-)
+policy = cel.compile('user.role == "admin" || resource.owner == user.id')
+
 
 # Evaluated many times per request
 def check_access(user, resource):
     return policy.execute({"user": user, "resource": resource})
+
 
 # Fast repeated evaluation
 assert check_access({"id": "alice", "role": "admin"}, {"owner": "bob"}) == True
@@ -263,11 +261,7 @@ Add multiple variables at once.
 from cel import Context, evaluate
 
 context = Context()
-context.update({
-    "user_id": "123",
-    "role": "admin", 
-    "permissions": ["read", "write", "delete"]
-})
+context.update({"user_id": "123", "role": "admin", "permissions": ["read", "write", "delete"]})
 
 # Verify the batch update worked
 evaluate("user_id", context)
@@ -298,10 +292,13 @@ Register a Python function for use in CEL expressions.
 ```python
 from cel import Context, evaluate
 
+
 def validate_email(email):
     import re
-    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+
+    pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     return re.match(pattern, email) is not None
+
 
 context = Context()
 context.add_function("validate_email", validate_email)
@@ -435,8 +432,11 @@ except RuntimeError as e:
 
 # Function execution errors raise RuntimeError
 from cel import Context
+
+
 def failing_function():
     raise Exception("Something went wrong")
+
 
 context = Context()
 context.add_function("fail", failing_function)
@@ -466,7 +466,7 @@ except TypeError as e:
 
 # Mixed signed/unsigned int operations raise TypeError
 try:
-    evaluate("1u + 2")  # Mixed signed/unsigned int  
+    evaluate("1u + 2")  # Mixed signed/unsigned int
     # → TypeError: Cannot mix signed and unsigned integers
     assert False, "Should have raised TypeError"
 except TypeError as e:
@@ -505,7 +505,7 @@ except TypeError as e:
 
 # To fix mixed arithmetic, use consistent types:
 result = evaluate("1.0 + 2.5")  # → 3.5 (both doubles)
-result = evaluate("1 + 2")      # → 3 (both ints)
+result = evaluate("1 + 2")  # → 3 (both ints)
 ```
 
 ### Production Error Handling

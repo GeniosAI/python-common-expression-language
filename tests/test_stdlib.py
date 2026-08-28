@@ -54,9 +54,7 @@ class TestSubstringFunction:
         assert result == "world"
 
         # Chained with other operations
-        result = cel.evaluate(
-            'substring("HELLO", 0, 2) + substring("world", 0, 3)', context
-        )
+        result = cel.evaluate('substring("HELLO", 0, 2) + substring("world", 0, 3)', context)
         assert result == "HEwor"
 
 
@@ -91,9 +89,7 @@ class TestSubstringWithOtherFunctions:
         assert result == 5
 
         # Extract and test membership
-        result = cel.evaluate(
-            'substring("hello world", 6, 11).startsWith("wor")', context
-        )
+        result = cel.evaluate('substring("hello world", 6, 11).startsWith("wor")', context)
         assert result is True
 
     def test_substring_with_context_variables(self):
@@ -113,9 +109,7 @@ class TestSubstringWithOtherFunctions:
         context.add_variable("email", "user@example.com")
 
         # Extract domain
-        result = cel.evaluate(
-            'substring(email, 5, 12) == "example" ? "valid" : "invalid"', context
-        )
+        result = cel.evaluate('substring(email, 5, 12) == "example" ? "valid" : "invalid"', context)
         assert result == "valid"
 
 
