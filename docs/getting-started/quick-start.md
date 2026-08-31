@@ -8,6 +8,7 @@ The simplest way to use CEL is with the `evaluate` function:
 
 ```python
 import cel
+
 Context = cel.Context
 
 
@@ -36,6 +37,7 @@ def as_context(value=None):
 def evaluate(expression, context=None):
     return cel.evaluate(expression, as_context(context))
 
+
 # Context/evaluate are provided by the documentation adapter
 
 # Basic arithmetic
@@ -59,7 +61,7 @@ result = evaluate("[1, 2, 3]", cel.Context())
 assert result == [1, 2, 3]  # → [1, 2, 3] (native Python list creation)
 
 result = evaluate('{"name": "Alice", "age": 30}', cel.Context())
-assert result == {'name': 'Alice', 'age': 30}  # → {'name': 'Alice', 'age': 30} (native Python dict)
+assert result == {"name": "Alice", "age": 30}  # → {'name': 'Alice', 'age': 30} (native Python dict)
 
 print("✓ Basic expressions working correctly")
 ```
@@ -83,10 +85,7 @@ user = {
     "name": "Alice",
     "age": 30,
     "roles": ["user", "admin"],
-    "profile": {
-        "email": "alice@example.com",
-        "verified": True
-    }
+    "profile": {"email": "alice@example.com", "verified": True},
 }
 
 # String concatenation with conditionals
@@ -99,12 +98,19 @@ result = evaluate('"admin" in user.roles', as_context({"user": user}))
 assert result == True  # → True (membership testing in arrays)
 
 # Nested object access
-result = evaluate('user.profile.verified && user.profile.email.endsWith("@example.com")', as_context({"user": user}))
+result = evaluate(
+    'user.profile.verified && user.profile.email.endsWith("@example.com")',
+    as_context({"user": user}),
+)
 assert result == True  # → True (deep object navigation with string methods)
 
 # Type conversions - CEL enforces type safety
-result = evaluate('user.name + " is " + string(user.age) + " years old"', as_context({"user": user}))
-assert result == "Alice is 30 years old"  # → "Alice is 30 years old" (explicit type conversion with string())
+result = evaluate(
+    'user.name + " is " + string(user.age) + " years old"', as_context({"user": user})
+)
+assert (
+    result == "Alice is 30 years old"
+)  # → "Alice is 30 years old" (explicit type conversion with string())
 
 # ❌ This would fail - no automatic type conversion between incompatible types:
 # evaluate('user.name + " is " + user.age')  # TypeError: can't add string + int
@@ -113,7 +119,9 @@ assert result == "Alice is 30 years old"  # → "Alice is 30 years old" (explici
 # string(), int(), float(), double() functions
 
 # Safe navigation with has()
-result = evaluate('has(user.profile.phone) ? user.profile.phone : "No phone"', as_context({"user": user}))
+result = evaluate(
+    'has(user.profile.phone) ? user.profile.phone : "No phone"', as_context({"user": user})
+)
 assert result == "No phone"  # → "No phone" (safe field checking prevents errors)
 
 print("✓ Context variables working correctly")
@@ -189,22 +197,15 @@ The REPL provides:
 # Context/evaluate are provided by the documentation adapter
 
 config = {
-    "database": {
-        "host": "localhost",
-        "port": 5432,
-        "ssl": True
-    },
-    "cache": {
-        "enabled": True,
-        "ttl": 3600
-    }
+    "database": {"host": "localhost", "port": 5432, "ssl": True},
+    "cache": {"enabled": True, "ttl": 3600},
 }
 
 # Validate configuration
 checks = [
     ("has(database.host) && database.host != ''", "Database host required"),
     ("database.port > 0 && database.port < 65536", "Valid database port required"),
-    ("!cache.enabled || cache.ttl > 0", "Cache TTL must be positive when enabled")
+    ("!cache.enabled || cache.ttl > 0", "Cache TTL must be positive when enabled"),
 ]
 
 for expression, message in checks:
@@ -219,6 +220,7 @@ print("✓ Configuration validation working correctly")
 ```python
 # Context/evaluate are provided by the documentation adapter
 
+
 def check_access_policy(user, resource, action):
     policy = """
     (user.role == "admin") ||
@@ -226,13 +228,10 @@ def check_access_policy(user, resource, action):
     (user.role == "member" && action == "read" && resource.public)
     """
 
-    context = {
-        "user": user,
-        "resource": resource,
-        "action": action
-    }
+    context = {"user": user, "resource": resource, "action": action}
 
     return evaluate(policy, as_context(context))
+
 
 # Example usage
 user = {"id": "alice", "role": "member"}
@@ -252,6 +251,7 @@ print("✓ Policy evaluation working correctly")
 ```python
 # Context/evaluate are provided by the documentation adapter
 
+
 def transform_user_data(users):
     """Transform and filter user data using CEL expressions."""
 
@@ -265,21 +265,31 @@ def transform_user_data(users):
     for user in active_adults:
         display_name = evaluate(
             'user.first_name + " " + user.last_name + " (" + user.role + ")"',
-            as_context({"user": user})
+            as_context({"user": user}),
         )
         user["display_name"] = display_name
 
     return active_adults
 
+
 # Example data
 users = [
     {"first_name": "Alice", "last_name": "Smith", "age": 30, "role": "admin", "active": True},
     {"first_name": "Bob", "last_name": "Jones", "age": 16, "role": "user", "active": True},
-    {"first_name": "Carol", "last_name": "Davis", "age": 25, "role": "user", "active": False}
+    {"first_name": "Carol", "last_name": "Davis", "age": 25, "role": "user", "active": False},
 ]
 
 result = transform_user_data(users)
-expected = [{'first_name': 'Alice', 'last_name': 'Smith', 'age': 30, 'role': 'admin', 'active': True, 'display_name': 'Alice Smith (admin)'}]
+expected = [
+    {
+        "first_name": "Alice",
+        "last_name": "Smith",
+        "age": 30,
+        "role": "admin",
+        "active": True,
+        "display_name": "Alice Smith (admin)",
+    }
+]
 assert result == expected  # → [Alice Smith (admin)] (filtered and transformed data)
 
 print("✓ Data transformation working correctly")
@@ -317,7 +327,7 @@ assert result == True  # → True (rich string method support)
 
 # Bytes operations
 result = evaluate("b'binary data'", cel.Context())
-assert result == b'binary data'  # → b'binary data' (native bytes support)
+assert result == b"binary data"  # → b'binary data' (native bytes support)
 assert isinstance(result, bytes)
 
 result = evaluate("b'hello'.size()", cel.Context())
@@ -331,7 +341,7 @@ result = evaluate("[1, 2, 3].size()", cel.Context())
 assert result == 3  # → 3 (list length)
 
 result = evaluate('{"name": "Alice", "age": 30}', cel.Context())
-assert result == {'name': 'Alice', 'age': 30}  # → {'name': 'Alice', 'age': 30} (maps as dicts)
+assert result == {"name": "Alice", "age": 30}  # → {'name': 'Alice', 'age': 30} (maps as dicts)
 assert isinstance(result, dict)
 
 result = evaluate('{"a": 1, "b": 2}.size()', cel.Context())
@@ -374,13 +384,15 @@ def evaluate_expression(expression: str, context: dict = None):
     """Evaluate expression with proper exception handling."""
     return evaluate(expression, as_context(context or {}))
 
+
 # For cases where you need fallback values
-def evaluate_with_default(expression: str, context: dict = None, default = None):
+def evaluate_with_default(expression: str, context: dict = None, default=None):
     """Evaluate with fallback value on errors."""
     try:
         return evaluate(expression, as_context(context or {}))
     except (ValueError, TypeError, RuntimeError):
         return default
+
 
 # Result-like pattern for detailed error information
 def safe_evaluate(expression: str, context: dict = None):
@@ -399,6 +411,7 @@ def safe_evaluate(expression: str, context: dict = None):
     except RuntimeError as e:
         return (False, None, f"Runtime error: {e}")
 
+
 # Examples demonstrating idiomatic error handling
 context = {"age": 25, "name": "Alice"}
 
@@ -411,9 +424,7 @@ except (ValueError, TypeError, RuntimeError) as e:
 
 # Fallback pattern for non-critical features
 display_name = evaluate_with_default(
-    'user.display_name',
-    {"user": {"first_name": "John"}},
-    default="Unknown User"
+    "user.display_name", {"user": {"first_name": "John"}}, default="Unknown User"
 )
 assert display_name == "Unknown User"  # → "Unknown User" (missing field)
 
@@ -428,6 +439,7 @@ assert success == True
 assert result == 50
 assert error == ""
 
+
 # Practical example: validation utility
 def validate_user_rules(rules: list[str], user_context: dict) -> dict[str, bool]:
     """Validate multiple business rules for a user."""
@@ -439,13 +451,14 @@ def validate_user_rules(rules: list[str], user_context: dict) -> dict[str, bool]
             results[rule] = False  # Invalid rules are considered failed
     return results
 
+
 # Test business rules validation
 user = {"age": 25, "role": "member", "verified": True}
 business_rules = [
-    "age >= 18",                    # Valid rule
-    "role == 'admin'",              # Valid rule (false result)
-    "verified && age > 21",         # Valid rule
-    "invalid_syntax + +",           # Invalid syntax
+    "age >= 18",  # Valid rule
+    "role == 'admin'",  # Valid rule (false result)
+    "verified && age > 21",  # Valid rule
+    "invalid_syntax + +",  # Invalid syntax
 ]
 
 rule_results = validate_user_rules(business_rules, user)

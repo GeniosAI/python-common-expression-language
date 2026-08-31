@@ -14,6 +14,7 @@ Implement a configurable business rules engine where rules are defined as CEL ex
 
 ```python
 import cel
+
 Context = cel.Context
 
 
@@ -42,8 +43,10 @@ def as_context(value=None):
 def evaluate(expression, context=None):
     return cel.evaluate(expression, as_context(context))
 
+
 # Context/evaluate are provided by the documentation adapter
 from datetime import datetime, timedelta
+
 
 class BusinessRulesEngine:
     """Execute configurable business rules using CEL."""
@@ -57,46 +60,37 @@ class BusinessRulesEngine:
                 vehicle.type == "truck" ? 1200 :
                 1000
             """,
-
             "age_multiplier": """
                 driver.age < 25 ? 1.5 :
                 driver.age < 35 ? 1.2 :
                 driver.age < 60 ? 1.0 :
                 1.1
             """,
-
             "experience_discount": """
                 driver.years_experience >= 10 ? 0.9 :
                 driver.years_experience >= 5 ? 0.95 :
                 1.0
             """,
-
             "safety_features_discount": """
                 vehicle.anti_theft ? 0.95 : 1.0
             """,
-
             "claims_penalty": """
                 driver.claims_count == 0 ? 0.9 :
                 driver.claims_count == 1 ? 1.0 :
                 driver.claims_count == 2 ? 1.2 :
                 1.4
             """,
-
             # Loan eligibility rules
             "credit_score_eligible": "applicant.credit_score >= 650",
-
             "income_sufficient": """
                 loan.monthly_payment <= (double(applicant.monthly_income) * 0.28)
             """,
-
             "debt_to_income_acceptable": """
                 (applicant.existing_debt + loan.monthly_payment) <= (double(applicant.monthly_income) * 0.36)
             """,
-
             "employment_stable": """
                 applicant.employment_months >= 24 || applicant.employment_type == "self_employed"
             """,
-
             # Shipping cost rules
             "shipping_base_cost": """
                 package.weight <= 1 ? 5.99 :
@@ -104,19 +98,16 @@ class BusinessRulesEngine:
                 package.weight <= 20 ? 15.99 :
                 double(package.weight) * 1.2
             """,
-
             "shipping_distance_multiplier": """
                 shipping.distance <= 50 ? 1.0 :
                 shipping.distance <= 200 ? 1.2 :
                 shipping.distance <= 1000 ? 1.5 :
                 2.0
             """,
-
             "express_shipping_multiplier": "shipping.express ? 2.0 : 1.0",
-
             "free_shipping_eligible": """
                 order.total >= 100 || customer.premium_member
-            """
+            """,
         }
 
     def calculate_insurance_premium(self, driver, vehicle):
@@ -133,11 +124,9 @@ class BusinessRulesEngine:
         claims_penalty = evaluate(self.rules["claims_penalty"], as_context(context))
 
         # Final calculation
-        premium = (base_premium *
-                  age_multiplier *
-                  experience_discount *
-                  safety_discount *
-                  claims_penalty)
+        premium = (
+            base_premium * age_multiplier * experience_discount * safety_discount * claims_penalty
+        )
 
         return round(premium, 2)
 
@@ -151,8 +140,10 @@ class BusinessRulesEngine:
         criteria = {
             "credit_score": evaluate(self.rules["credit_score_eligible"], as_context(context)),
             "income": evaluate(self.rules["income_sufficient"], as_context(context)),
-            "debt_to_income": evaluate(self.rules["debt_to_income_acceptable"], as_context(context)),
-            "employment": evaluate(self.rules["employment_stable"], as_context(context))
+            "debt_to_income": evaluate(
+                self.rules["debt_to_income_acceptable"], as_context(context)
+            ),
+            "employment": evaluate(self.rules["employment_stable"], as_context(context)),
         }
 
         # All criteria must pass
@@ -161,7 +152,7 @@ class BusinessRulesEngine:
         return {
             "eligible": eligible,
             "criteria": criteria,
-            "reasons": [k for k, v in criteria.items() if not v]
+            "reasons": [k for k, v in criteria.items() if not v],
         }
 
     def calculate_shipping_cost(self, package, shipping, order, customer):
@@ -178,27 +169,25 @@ class BusinessRulesEngine:
 
         # Calculate shipping cost
         base_cost = evaluate(self.rules["shipping_base_cost"], as_context(context))
-        distance_multiplier = evaluate(self.rules["shipping_distance_multiplier"], as_context(context))
-        express_multiplier = evaluate(self.rules["express_shipping_multiplier"], as_context(context))
+        distance_multiplier = evaluate(
+            self.rules["shipping_distance_multiplier"], as_context(context)
+        )
+        express_multiplier = evaluate(
+            self.rules["express_shipping_multiplier"], as_context(context)
+        )
 
         total_cost = base_cost * distance_multiplier * express_multiplier
 
         return round(total_cost, 2)
 
+
 # Example usage
 rules_engine = BusinessRulesEngine()
 
 # Insurance premium calculation
-young_driver = {
-    "age": 22,
-    "years_experience": 2,
-    "claims_count": 1
-}
+young_driver = {"age": 22, "years_experience": 2, "claims_count": 1}
 
-sports_car = {
-    "type": "car",
-    "anti_theft": True
-}
+sports_car = {"type": "car", "anti_theft": True}
 
 premium = rules_engine.calculate_insurance_premium(young_driver, sports_car)
 # → 1140.0  # Young driver (22) + sports car: $800 * 1.5 (age) * 0.95 (experience) * 0.95 (anti-theft) * 1.0 (claims)
@@ -211,12 +200,10 @@ loan_applicant = {
     "monthly_income": 5000,
     "existing_debt": 500,  # Lower debt to pass debt-to-income ratio
     "employment_months": 30,
-    "employment_type": "employed"
+    "employment_type": "employed",
 }
 
-loan_request = {
-    "monthly_payment": 1200
-}
+loan_request = {"monthly_payment": 1200}
 
 eligibility = rules_engine.check_loan_eligibility(loan_applicant, loan_request)
 # → {"eligible": True, "criteria": {"credit_score": True, "income": True, "debt_to_income": True, "employment": True}, "reasons": []}
@@ -240,7 +227,9 @@ assert shipping_cost > 0
 
 # Test with premium member (should get free shipping)
 premium_customer = {"premium_member": True}
-free_shipping_cost = rules_engine.calculate_shipping_cost(package, shipping, order, premium_customer)
+free_shipping_cost = rules_engine.calculate_shipping_cost(
+    package, shipping, order, premium_customer
+)
 # → 0.0  # Premium member gets free shipping regardless of order total or package size
 assert free_shipping_cost == 0.0
 ```
@@ -257,6 +246,7 @@ Use CEL expressions to define transformation rules that can be easily understood
 
 ```python
 # Context/evaluate are provided by the documentation adapter
+
 
 class DataTransformationPipeline:
     """Transform data using configurable CEL expressions."""
@@ -291,9 +281,8 @@ class DataTransformationPipeline:
                     has(input.active) ? (input.active ? "active" : "inactive") :
                     has(input.status) ? input.status :
                     "unknown"
-                """
+                """,
             },
-
             # Calculate derived fields
             "calculate_metrics": {
                 "engagement_score": """
@@ -311,8 +300,8 @@ class DataTransformationPipeline:
                     has(user.premium) && user.premium ? "gold" :
                     has(user.engagement_score) && user.engagement_score > 50 ? "silver" :
                     "bronze"
-                """
-            }
+                """,
+            },
         }
 
     def transform_user_data(self, input_data, current_year=2024):
@@ -354,6 +343,7 @@ class DataTransformationPipeline:
         grade_map = {"A": 95, "B": 85, "C": 75, "D": 65, "F": 50}
         return grade_map.get(grade.upper() if isinstance(grade, str) else "", 0)
 
+
 # Example: Transform data from different sources
 pipeline = DataTransformationPipeline()
 
@@ -369,7 +359,7 @@ source1_data = {
     "posts_count": 10,
     "comments_count": 25,
     "premium": True,
-    "failed_logins": 1
+    "failed_logins": 1,
 }
 
 # Data source 2: Has name, birth_year, different field names
@@ -383,7 +373,7 @@ source2_data = {
     "posts_count": 5,
     "comments_count": 15,
     "premium": False,
-    "failed_logins": 3
+    "failed_logins": 3,
 }
 
 # Transform both data sources
@@ -434,15 +424,14 @@ class ComposableRulesEngine(BusinessRulesEngine):
                 "volume_discount": "quantity >= 10 ? 0.05 : 0.0",
                 "loyalty_discount": "customer.loyalty_years >= 5 ? 0.1 : (customer.loyalty_years >= 2 ? 0.05 : 0.0)",
                 "seasonal_discount": "is_holiday_season() ? 0.15 : 0.0",
-                "combined_discount": "min(base_discount + volume_discount + loyalty_discount + seasonal_discount, 0.5)"
+                "combined_discount": "min(base_discount + volume_discount + loyalty_discount + seasonal_discount, 0.5)",
             },
-
             "risk_assessment": {
                 "financial_risk": "applicant.debt_ratio > 0.4 ? 0.3 : (applicant.debt_ratio > 0.2 ? 0.1 : 0.0)",
                 "credit_risk": "applicant.credit_score < 600 ? 0.4 : (applicant.credit_score < 700 ? 0.2 : 0.0)",
                 "employment_risk": "applicant.employment_type == 'contract' ? 0.2 : 0.0",
-                "total_risk": "min(financial_risk + credit_risk + employment_risk, 1.0)"
-            }
+                "total_risk": "min(financial_risk + credit_risk + employment_risk, 1.0)",
+            },
         }
 
     def evaluate_rule_hierarchy(self, hierarchy_name, context_data):
@@ -467,7 +456,9 @@ class ComposableRulesEngine(BusinessRulesEngine):
             try:
                 result = evaluate(rule_expression, as_context(context))
                 results[rule_name] = result
-                context.add_variable(rule_name, cel.prepare(result))  # Make available to subsequent rules
+                context.add_variable(
+                    rule_name, cel.prepare(result)
+                )  # Make available to subsequent rules
             except Exception as e:
                 # Handle rule evaluation error gracefully
                 results[rule_name] = None
@@ -480,13 +471,14 @@ class ComposableRulesEngine(BusinessRulesEngine):
         # Holiday season: November-December
         return now.month in [11, 12]
 
+
 # Example rule hierarchy evaluation
 composable_engine = ComposableRulesEngine()
 
 discount_context = {
     "quantity": 15,
     "customer": {"loyalty_years": 3},
-    "product": {"category": "electronics"}
+    "product": {"category": "electronics"},
 }
 
 discount_results = composable_engine.evaluate_rule_hierarchy("discount_rules", discount_context)
@@ -499,7 +491,9 @@ assert discount_results["combined_discount"] >= 0
 # Test the individual discount calculations
 print("Testing rule composition calculations:")
 print(f"Quantity: {discount_context['quantity']} (should trigger volume discount)")
-print(f"Customer loyalty: {discount_context['customer']['loyalty_years']} years (should trigger loyalty discount)")
+print(
+    f"Customer loyalty: {discount_context['customer']['loyalty_years']} years (should trigger loyalty discount)"
+)
 # → Quantity: 15 (should trigger volume discount)
 # → Customer loyalty: 3 years (should trigger loyalty discount)
 
@@ -511,13 +505,22 @@ assert discount_results["loyalty_discount"] == 0.05, "Loyalty discount should be
 # Verify seasonal discount (behavior depends on actual date)
 seasonal_discount = discount_results["seasonal_discount"]
 assert seasonal_discount >= 0.0, "Seasonal discount should be non-negative"
-print(f"Seasonal discount: {seasonal_discount} ({'holiday season' if seasonal_discount > 0 else 'regular season'})")
+print(
+    f"Seasonal discount: {seasonal_discount} ({'holiday season' if seasonal_discount > 0 else 'regular season'})"
+)
 # → Seasonal discount: 0.15 (holiday season)  # or 0.0 (regular season) depending on current date
 
 # Verify combined discount calculation
-expected_combined = discount_results["base_discount"] + discount_results["volume_discount"] + discount_results["loyalty_discount"] + seasonal_discount
+expected_combined = (
+    discount_results["base_discount"]
+    + discount_results["volume_discount"]
+    + discount_results["loyalty_discount"]
+    + seasonal_discount
+)
 expected_combined = min(expected_combined, 0.5)  # Apply 50% cap
-assert discount_results["combined_discount"] == expected_combined, f"Combined discount should be {expected_combined}"
+assert discount_results["combined_discount"] == expected_combined, (
+    f"Combined discount should be {expected_combined}"
+)
 
 print(f"✓ Rule composition working: {discount_results['combined_discount']} total discount")
 # → ✓ Rule composition working: 0.25 total discount
@@ -526,29 +529,31 @@ print(f"✓ Rule composition working: {discount_results['combined_discount']} to
 high_loyalty_context = {
     "quantity": 20,
     "customer": {"loyalty_years": 10},  # Higher loyalty discount
-    "product": {"category": "electronics"}
+    "product": {"category": "electronics"},
 }
 
-high_discount_results = composable_engine.evaluate_rule_hierarchy("discount_rules", high_loyalty_context)
+high_discount_results = composable_engine.evaluate_rule_hierarchy(
+    "discount_rules", high_loyalty_context
+)
 # → {"base_discount": 0.0, "volume_discount": 0.05, "loyalty_discount": 0.1, "seasonal_discount": 0.15, "combined_discount": 0.3}
 # → High-value customer: 5% volume + 10% loyalty (10 years) + 15% seasonal = 30% total (under 50% cap)
-assert high_discount_results["loyalty_discount"] == 0.1, "10-year customer should get 10% loyalty discount"
+assert high_discount_results["loyalty_discount"] == 0.1, (
+    "10-year customer should get 10% loyalty discount"
+)
 
 # Calculate expected total based on actual seasonal discount
 high_seasonal = high_discount_results["seasonal_discount"]
 expected_total = min(0.0 + 0.05 + 0.1 + high_seasonal, 0.5)
-assert high_discount_results["combined_discount"] == expected_total, "Should apply discount cap correctly"
+assert high_discount_results["combined_discount"] == expected_total, (
+    "Should apply discount cap correctly"
+)
 
 print(f"✓ High loyalty customer discount: {high_discount_results['combined_discount']}")
 # → ✓ High loyalty customer discount: 0.3
 
 # Test risk assessment hierarchy
 risk_context = {
-    "applicant": {
-        "debt_ratio": 0.3,
-        "credit_score": 650,
-        "employment_type": "contract"
-    }
+    "applicant": {"debt_ratio": 0.3, "credit_score": 650, "employment_type": "contract"}
 }
 
 risk_results = composable_engine.evaluate_rule_hierarchy("risk_assessment", risk_context)
@@ -572,7 +577,6 @@ def create_conditional_transformer():
             has(input.telephone) ? format_phone(input.telephone) :
             null
         """,
-
         "address": """
             has(input.address) ? input.address :
             (has(input.street) && has(input.city)) ?
@@ -581,7 +585,6 @@ def create_conditional_transformer():
                 (has(input.zip) ? " " + string(input.zip) : "") :
             null
         """,
-
         "full_address": """
             has(user.address) ? user.address :
             join_address_parts([
@@ -590,7 +593,7 @@ def create_conditional_transformer():
                 get_field("input.state", ""),
                 get_field("input.postal_code", "")
             ])
-        """
+        """,
     }
 
     def format_phone(phone):
@@ -615,8 +618,9 @@ def create_conditional_transformer():
     return mapping_rules, {
         "format_phone": format_phone,
         "get_field": get_field,
-        "join_address_parts": join_address_parts
+        "join_address_parts": join_address_parts,
     }
+
 
 # Test the transformer
 rules, funcs = create_conditional_transformer()
@@ -645,7 +649,7 @@ class DynamicRulesEngine:
                 "version": rule_data.get("version", "1.0"),
                 "last_modified": rule_data.get("last_modified", datetime.now().isoformat()),
                 "author": rule_data.get("author", "system"),
-                "tags": rule_data.get("tags", [])
+                "tags": rule_data.get("tags", []),
             }
 
     def validate_rule(self, rule_expression, test_context=None):
@@ -656,7 +660,7 @@ class DynamicRulesEngine:
                 "test_string": "test",
                 "test_boolean": True,
                 "test_list": [1, 2, 3],
-                "test_object": {"field": "value"}
+                "test_object": {"field": "value"},
             }
 
         try:
@@ -685,7 +689,7 @@ class DynamicRulesEngine:
             self.rule_metadata[rule_name] = {
                 **self.rule_metadata.get(rule_name, {}),
                 **metadata,
-                "last_modified": datetime.now().isoformat()
+                "last_modified": datetime.now().isoformat(),
             }
 
         return True
@@ -710,8 +714,9 @@ class DynamicRulesEngine:
         return {
             "name": rule_name,
             "expression": self.rules[rule_name],
-            "metadata": self.rule_metadata.get(rule_name, {})
+            "metadata": self.rule_metadata.get(rule_name, {}),
         }
+
 
 # Example dynamic rule loading
 dynamic_engine = DynamicRulesEngine()
@@ -728,9 +733,8 @@ rules_config = {
         "description": "Determine customer tier based on annual spending",
         "version": "2.1",
         "author": "business_team",
-        "tags": ["customer", "segmentation"]
+        "tags": ["customer", "segmentation"],
     },
-
     "fraud_score": {
         "expression": """
             double(transaction.amount > double(customer.avg_transaction) * 5.0 ? 0.3 : 0.0) +
@@ -741,8 +745,8 @@ rules_config = {
         "description": "Calculate fraud risk score for transactions",
         "version": "1.5",
         "author": "security_team",
-        "tags": ["fraud", "security", "risk"]
-    }
+        "tags": ["fraud", "security", "risk"],
+    },
 }
 
 dynamic_engine.load_rules_from_config(rules_config)
@@ -754,13 +758,9 @@ customer_data = {
         "annual_spend": 7500,
         "avg_transaction": 150,
         "usual_location": "NY",
-        "failed_attempts_today": 1
+        "failed_attempts_today": 1,
     },
-    "transaction": {
-        "amount": 500,
-        "location": "NY",
-        "time_hour": 14
-    }
+    "transaction": {"amount": 500, "location": "NY", "time_hour": 14},
 }
 
 tier = dynamic_engine.execute_rule("customer_tier", customer_data)
@@ -788,8 +788,9 @@ except ValueError as e:
 # Test rule validation with valid business rule expression
 # Provide validation context that matches the rule's expected variables
 validation_context = {"customer": {"annual_spend": 5000}}
-success = dynamic_engine.update_rule("test_rule", "customer.annual_spend > 1000",
-                                    validation_context=validation_context)
+success = dynamic_engine.update_rule(
+    "test_rule", "customer.annual_spend > 1000", validation_context=validation_context
+)
 # → True  # Rule validation passed: expression is syntactically correct and executes successfully
 assert success == True, "Should accept valid business rule"
 
@@ -810,12 +811,18 @@ print(f"✓ Rule metadata: {rule_info['metadata']['description']}")
 # → ✓ Rule metadata: Determine customer tier based on annual spending
 
 # Test edge case: Different customer tiers
-bronze_customer_data = {**customer_data, "customer": {**customer_data["customer"], "annual_spend": 500}}
+bronze_customer_data = {
+    **customer_data,
+    "customer": {**customer_data["customer"], "annual_spend": 500},
+}
 bronze_tier = dynamic_engine.execute_rule("customer_tier", bronze_customer_data)
 # → "bronze"  # $500 annual spend < $1000 threshold for bronze tier
 assert bronze_tier == "bronze", "Low-spend customer should be bronze tier"
 
-platinum_customer_data = {**customer_data, "customer": {**customer_data["customer"], "annual_spend": 15000}}
+platinum_customer_data = {
+    **customer_data,
+    "customer": {**customer_data["customer"], "annual_spend": 15000},
+}
 platinum_tier = dynamic_engine.execute_rule("customer_tier", platinum_customer_data)
 # → "platinum"  # $15000 annual spend >= $10000 threshold for platinum tier
 assert platinum_tier == "platinum", "High-spend customer should be platinum tier"
@@ -867,6 +874,7 @@ def transform_batch_with_filters(data_list, transformation_config):
 
     return results
 
+
 # Example batch transformation configuration
 batch_config = {
     "filters": [
@@ -891,19 +899,32 @@ batch_config = {
             has(input.premium) && input.premium ? "premium" :
             has(input.verified) && input.verified ? "verified" :
             "basic"
-        """
+        """,
     },
     "functions": {
         "days_between": lambda start, end: 30  # Simplified for example
-    }
+    },
 }
 
 # Sample data
 sample_records = [
-    {"id": "1", "email": "alice@example.com", "active": True, "premium": True, "first_name": "Alice", "last_name": "Smith"},
+    {
+        "id": "1",
+        "email": "alice@example.com",
+        "active": True,
+        "premium": True,
+        "first_name": "Alice",
+        "last_name": "Smith",
+    },
     {"id": "2", "email": "", "active": True},  # Will be filtered out - no email
     {"id": "3", "email": "bob@example.com", "active": False},  # Will be filtered out - inactive
-    {"id": "4", "email": "carol@example.com", "active": True, "verified": True, "display_name": "Carol D."}
+    {
+        "id": "4",
+        "email": "carol@example.com",
+        "active": True,
+        "verified": True,
+        "display_name": "Carol D.",
+    },
 ]
 
 transformed_batch = transform_batch_with_filters(sample_records, batch_config)
@@ -911,8 +932,12 @@ transformed_batch = transform_batch_with_filters(sample_records, batch_config)
 # → Filtered out 2 records: record #2 (empty email), record #3 (inactive status)
 
 # Verify filtering worked correctly
-expected_valid_records = 2  # Records 1 and 4 should pass filters (have ID, active=true, non-empty email)
-assert len(transformed_batch) == expected_valid_records, f"Expected {expected_valid_records} records, got {len(transformed_batch)}"
+expected_valid_records = (
+    2  # Records 1 and 4 should pass filters (have ID, active=true, non-empty email)
+)
+assert len(transformed_batch) == expected_valid_records, (
+    f"Expected {expected_valid_records} records, got {len(transformed_batch)}"
+)
 print(f"✓ Batch processing filtered to {len(transformed_batch)} valid records")
 # → ✓ Batch processing filtered to 2 valid records
 

@@ -29,6 +29,7 @@ CEL is intentionally **not** a general-purpose programming language. You can't w
 
 ```python
 import cel
+
 Context = cel.Context
 
 
@@ -57,10 +58,13 @@ def as_context(value=None):
 def evaluate(expression, context=None):
     return cel.evaluate(expression, as_context(context))
 
+
 # Context/evaluate are provided by the documentation adapter
 
 # ✅ This works - safe expression evaluation
-result = evaluate("user.age >= 18 && user.verified", as_context({"user": {"age": 25, "verified": True}}))
+result = evaluate(
+    "user.age >= 18 && user.verified", as_context({"user": {"age": 25, "verified": True}})
+)
 assert result == True  # → True (adult verified user)
 
 # ❌ This is impossible - no loops or side effects
@@ -89,8 +93,8 @@ user_filter = "user.age >= 18 && user.verified"
 
 # Test cases
 test_cases = [
-    ({"user": {"age": 25, "verified": True}}, True),   # Valid adult
-    ({"user": {"age": 25, "verified": False}}, False), # Unverified
+    ({"user": {"age": 25, "verified": True}}, True),  # Valid adult
+    ({"user": {"age": 25, "verified": False}}, False),  # Unverified
     ({"user": {"age": 16, "verified": True}}, False),  # Minor
 ]
 
@@ -119,10 +123,10 @@ policy = "user.role == 'admin' || (user.department == 'IT' && user.yearsOfServic
 
 # Compact test table
 test_scenarios = [
-    ({"role": "admin", "department": "sales", "yearsOfService": 1}, True),    # Admin override
-    ({"role": "user", "department": "IT", "yearsOfService": 3}, True),       # Senior IT
-    ({"role": "user", "department": "IT", "yearsOfService": 1}, False),      # Junior IT
-    ({"role": "user", "department": "sales", "yearsOfService": 5}, False),   # Non-IT
+    ({"role": "admin", "department": "sales", "yearsOfService": 1}, True),  # Admin override
+    ({"role": "user", "department": "IT", "yearsOfService": 3}, True),  # Senior IT
+    ({"role": "user", "department": "IT", "yearsOfService": 1}, False),  # Junior IT
+    ({"role": "user", "department": "sales", "yearsOfService": 5}, False),  # Non-IT
 ]
 
 for user_data, expected in test_scenarios:
@@ -142,19 +146,24 @@ for user_data, expected in test_scenarios:
 
 # Business pricing with multiple factors
 pricing_rule = "base_price * (double(1) + tax_rate) * double(premium_customer ? 0.9 : 1.0)"
-result = evaluate(pricing_rule, as_context({
-    "base_price": 100.0, "tax_rate": 0.08, "premium_customer": True
-}))
+result = evaluate(
+    pricing_rule, as_context({"base_price": 100.0, "tax_rate": 0.08, "premium_customer": True})
+)
 # → 97.2 (premium customer gets 10% discount)
 assert result == 97.2  # Testing for illustration - not required in your code
 
 # Multi-tier access control
 access_policy = "user.role == 'admin' || (resource.owner == user.id && action in ['read', 'update']) || (resource.public && action == 'read')"
-result = evaluate(access_policy, as_context({
-    "user": {"role": "admin", "id": "user1"},
-    "resource": {"owner": "user2", "public": False},
-    "action": "delete"
-}))
+result = evaluate(
+    access_policy,
+    as_context(
+        {
+            "user": {"role": "admin", "id": "user1"},
+            "resource": {"owner": "user2", "public": False},
+            "action": "delete",
+        }
+    ),
+)
 # → True (admin role grants access to any action)
 assert result == True  # Testing for illustration - not required in your code
 ```
@@ -169,13 +178,15 @@ assert result == True  # Testing for illustration - not required in your code
 validation_rules = {
     "Valid port range": "config.database.port > 0 && config.database.port < 65536",
     "Cache TTL minimum": "config.cache.ttl >= 60",
-    "SSL in production": "config.features.ssl_enabled || config.environment == 'development'"
+    "SSL in production": "config.features.ssl_enabled || config.environment == 'development'",
 }
 
 config = {
     "config": {
-        "database": {"port": 5432}, "cache": {"ttl": 300},
-        "features": {"ssl_enabled": True}, "environment": "production"
+        "database": {"port": 5432},
+        "cache": {"ttl": 300},
+        "features": {"ssl_enabled": True},
+        "environment": "production",
     }
 }
 
@@ -191,8 +202,16 @@ for description, rule in validation_rules.items():
 
 # Dynamic API filters
 filters = {
-    "Active engineering/product": ("user.active && user.department in ['engineering', 'product']", {"user": {"active": True, "department": "engineering"}}, True),    # → True (active eng user)
-    "Performance scoring": ("double(base_score) * effort_multiplier + double(bonus_points)", {"base_score": 80, "effort_multiplier": 1.2, "bonus_points": 10}, 106.0)  # → 106.0 (calculated score)
+    "Active engineering/product": (
+        "user.active && user.department in ['engineering', 'product']",
+        {"user": {"active": True, "department": "engineering"}},
+        True,
+    ),  # → True (active eng user)
+    "Performance scoring": (
+        "double(base_score) * effort_multiplier + double(bonus_points)",
+        {"base_score": 80, "effort_multiplier": 1.2, "bonus_points": 10},
+        106.0,
+    ),  # → 106.0 (calculated score)
 }
 
 for name, (expr, ctx, expected) in filters.items():
@@ -228,15 +247,17 @@ def complex_approval_workflow(request):
     if request.amount > 10000:
         return "executive_approval"  # Multiple steps happen here
     elif request.department == "finance":
-        return "finance_approval"   # Different approval path
+        return "finance_approval"  # Different approval path
     else:
-        return "auto_approve"       # Simple approval
+        return "auto_approve"  # Simple approval
+
 
 # Test the function
 class MockRequest:
     def __init__(self, amount, department):
         self.amount = amount
         self.department = department
+
 
 result = complex_approval_workflow(MockRequest(15000, "engineering"))
 # → "executive_approval" (high-value request)
@@ -268,6 +289,7 @@ def send_notification(user, message):
     # email_service.send(user.email, message)
     # slack_service.post(user.slack_id, message)
     return f"Sent '{message}' to {user['email']} and {user['slack_id']}"
+
 
 # Test the function
 user = {"email": "test@example.com", "slack_id": "@test"}
@@ -303,10 +325,11 @@ class RateLimiter:
             return True
         return False
 
+
 # Test the class
 rate_limiter = RateLimiter()
-assert rate_limiter.is_allowed("user1", max_requests=2) == True   # → True (first request)
-assert rate_limiter.is_allowed("user1", max_requests=2) == True   # → True (second request)
+assert rate_limiter.is_allowed("user1", max_requests=2) == True  # → True (first request)
+assert rate_limiter.is_allowed("user1", max_requests=2) == True  # → True (second request)
 assert rate_limiter.is_allowed("user1", max_requests=2) == False  # → False (limit exceeded)
 ```
 
@@ -321,7 +344,9 @@ CEL expressions should be readable by non-programmers. Business users should be 
 
 # ✅ GOOD: Clear and readable
 clear_rule = "order.total > 100 && customer.loyalty_tier == 'gold'"
-result = evaluate(clear_rule, as_context({"order": {"total": 150}, "customer": {"loyalty_tier": "gold"}}))
+result = evaluate(
+    clear_rule, as_context({"order": {"total": 150}, "customer": {"loyalty_tier": "gold"}})
+)
 assert result == True  # → True (gold customer with large order)
 
 # ❌ BAD: Too cryptic - avoid this style
@@ -356,7 +381,7 @@ Provide clean, well-structured data to your expressions.
 context = {
     "user": {"id": "user123", "role": "admin", "permissions": ["read", "write", "delete"]},
     "resource": {"type": "document", "owner": "user123", "public": False},
-    "action": "delete"
+    "action": "delete",
 }
 
 policy = "user.role == 'admin' || (resource.owner == user.id && 'delete' in user.permissions)"
@@ -377,9 +402,32 @@ CEL expressions are code - treat them as such with proper testing.
 
 # Compact test scenarios
 test_cases = [
-    ("Admin access", "user.role == 'admin'", {"user": {"role": "admin"}, "resource": {"type": "document"}, "action": "delete"}, True),    # → True (admin access)
-    ("Owner access", "resource.owner == user.id", {"user": {"id": "user123", "role": "user"}, "resource": {"owner": "user123"}, "action": "read"}, True),    # → True (owner access)
-    ("Denied access", "resource.owner == user.id", {"user": {"id": "user456", "role": "user"}, "resource": {"owner": "user123"}, "action": "read"}, False),   # → False (denied access)
+    (
+        "Admin access",
+        "user.role == 'admin'",
+        {"user": {"role": "admin"}, "resource": {"type": "document"}, "action": "delete"},
+        True,
+    ),  # → True (admin access)
+    (
+        "Owner access",
+        "resource.owner == user.id",
+        {
+            "user": {"id": "user123", "role": "user"},
+            "resource": {"owner": "user123"},
+            "action": "read",
+        },
+        True,
+    ),  # → True (owner access)
+    (
+        "Denied access",
+        "resource.owner == user.id",
+        {
+            "user": {"id": "user456", "role": "user"},
+            "resource": {"owner": "user123"},
+            "action": "read",
+        },
+        False,
+    ),  # → False (denied access)
 ]
 
 for name, policy, context, expected in test_cases:
@@ -398,9 +446,24 @@ Always check for field existence when dealing with optional data.
 
 # ✅ Safe patterns with has() checks
 safety_examples = [
-    ("Complete profile", 'has(user.profile) && user.profile.verified', {"user": {"profile": {"verified": True}}}, True),    # → True (profile exists and verified)
-    ("Missing profile", 'has(user.profile) && user.profile.verified', {"user": {}}, False),    # → False (no profile, safe fallback)
-    ("Fallback value", 'has(user.display_name) ? user.display_name : user.email', {"user": {"email": "test@example.com"}}, "test@example.com"),    # → "test@example.com" (fallback to email)
+    (
+        "Complete profile",
+        "has(user.profile) && user.profile.verified",
+        {"user": {"profile": {"verified": True}}},
+        True,
+    ),  # → True (profile exists and verified)
+    (
+        "Missing profile",
+        "has(user.profile) && user.profile.verified",
+        {"user": {}},
+        False,
+    ),  # → False (no profile, safe fallback)
+    (
+        "Fallback value",
+        "has(user.display_name) ? user.display_name : user.email",
+        {"user": {"email": "test@example.com"}},
+        "test@example.com",
+    ),  # → "test@example.com" (fallback to email)
 ]
 
 for name, expr, context, expected in safety_examples:
@@ -430,7 +493,7 @@ access_policy = "user.role == 'admin' || (resource.public && action == 'read') |
 test_context = {
     "user": {"id": "user1", "role": "user", "department": "engineering", "verified": True},
     "resource": {"type": "document", "owner": "user1", "public": False},
-    "action": "read"
+    "action": "read",
 }
 
 result = evaluate(access_policy, as_context(test_context))
@@ -454,12 +517,7 @@ Think of CEL as a very smart calculator that can work with complex data structur
 
 # Like a calculator, but for complex logic
 expression = "price * double(quantity) * (double(1) + tax_rate) * double(customer.vip ? 0.9 : 1.0)"
-context = {
-    "price": 29.99,
-    "quantity": 2,
-    "tax_rate": 0.08,
-    "customer": {"vip": True}
-}
+context = {"price": 29.99, "quantity": 2, "tax_rate": 0.08, "customer": {"vip": True}}
 
 total = evaluate(expression, as_context(context))  # 58.38 (with VIP discount)
 assert abs(total - 58.3006) < 0.001  # 29.99 * 2 * 1.08 * 0.9

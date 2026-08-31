@@ -54,12 +54,7 @@ Compile an expression once and execute it against a `Context`:
 ```python
 import cel
 
-prepared = cel.prepare({
-    "objects": [
-        {"active": i % 2 == 0, "score": i}
-        for i in range(500)
-    ]
-})
+prepared = cel.prepare({"objects": [{"active": i % 2 == 0, "score": i} for i in range(500)]})
 context = cel.Context()
 program = cel.compile("data.objects[3].score >= 3")
 

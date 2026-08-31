@@ -81,8 +81,7 @@ import cel
 
 data = {
     "objects": [
-        {"active": i % 2 == 0, "score": i, "profile": {"enabled": True}}
-        for i in range(500)
+        {"active": i % 2 == 0, "score": i, "profile": {"enabled": True}} for i in range(500)
     ]
 }
 prepared = cel.prepare(data)
@@ -102,8 +101,10 @@ Retain prepared objects used for frequent replacement. If a context owns the fin
 import cel
 from cel import Context, evaluate
 
+
 def calculate_discount(price, rate):
     return price * rate
+
 
 context = Context()
 context.add_function("calculate_discount", calculate_discount)

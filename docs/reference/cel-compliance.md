@@ -158,6 +158,7 @@ This library provides Python implementations of missing CEL functions:
 
 ```python
 import cel
+
 Context = cel.Context
 
 
@@ -185,6 +186,7 @@ def as_context(value=None):
 
 def evaluate(expression, context=None):
     return cel.evaluate(expression, as_context(context))
+
 
 # Context/evaluate are provided by the documentation adapter
 from cel.stdlib import add_stdlib_to_context
@@ -220,7 +222,7 @@ context.add_variable("name", cel.prepare("ALICE"))
 context.add_variable("text", cel.prepare("hello world"))
 
 # Use Python functions in CEL expressions
-result = evaluate('lower(name)', as_context(context))  # → "alice"
+result = evaluate("lower(name)", as_context(context))  # → "alice"
 result = evaluate('find(text, "world")', as_context(context))  # → 6
 ```
 
@@ -236,13 +238,14 @@ result = evaluate("int(value) + 1", as_context({"value": "42"}))  # → 43
 result = evaluate("1 + int(2u)", cel.Context())  # → 3 (safe alternative)
 
 # ✅ SAFE: Use has() checks for optional fields
-safe_expr = 'has(user.profile) && user.profile.verified'
+safe_expr = "has(user.profile) && user.profile.verified"
 result = evaluate(safe_expr, as_context({"user": {}}))  # → False (graceful handling)
 ```
 
 #### Production-Safe Error Handling
 ```python
 # Context/evaluate are provided by the documentation adapter
+
 
 def safe_evaluate(expression, context):
     """Wrapper for production CEL evaluation with proper error handling."""
@@ -260,6 +263,7 @@ def safe_evaluate(expression, context):
         # Type mismatches - log and return safe default
         print(f"CEL type error: {e}")
         return False  # Fail-safe default
+
 
 # Usage in access control (always fail-safe)
 policy_expr = "user.verified && user.role == 'admin'"
@@ -454,7 +458,7 @@ except ValueError as e:
     print(f"Parse error: {e}")
 
 try:
-    evaluate('"mixed quotes\'', as_context({}))
+    evaluate("\"mixed quotes'", as_context({}))
 except ValueError as e:
     print(f"Parse error: {e}")
 ```

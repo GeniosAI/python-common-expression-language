@@ -142,9 +142,7 @@ class CELFormatter:
         """Format result as string (for backward compatibility and testing)."""
         rich_renderable = CELFormatter.get_rich_renderable(result, format_type)
         # For Rich objects, we need to capture their output
-        if hasattr(rich_renderable, "__rich__") or hasattr(
-            rich_renderable, "__rich_console__"
-        ):
+        if hasattr(rich_renderable, "__rich__") or hasattr(rich_renderable, "__rich_console__"):
             with console.capture() as capture:
                 console.print(rich_renderable)
             return capture.get()
@@ -154,18 +152,14 @@ class CELFormatter:
     def _get_pretty_renderable(result: Any) -> Any:
         """Get Rich renderable for pretty-formatted result."""
         if isinstance(result, dict):
-            table = Table(
-                title="Dictionary Result", show_header=True, header_style="bold magenta"
-            )
+            table = Table(title="Dictionary Result", show_header=True, header_style="bold magenta")
             table.add_column("Key", style="cyan")
             table.add_column("Value", style="green")
             for k, v in result.items():
                 table.add_row(str(k), str(v))
             return table
         elif isinstance(result, list):
-            table = Table(
-                title="List Result", show_header=True, header_style="bold magenta"
-            )
+            table = Table(title="List Result", show_header=True, header_style="bold magenta")
             table.add_column("Index", style="cyan")
             table.add_column("Value", style="green")
             for i, v in enumerate(result):
@@ -316,9 +310,7 @@ class InteractiveCELREPL:
                     self.commands[command]()
                     continue
                 elif command == "load" and len(command_parts) > 1:
-                    filename = " ".join(
-                        command_parts[1:]
-                    )  # Handle filenames with spaces
+                    filename = " ".join(command_parts[1:])  # Handle filenames with spaces
                     self._load_context(filename)
                     continue
 
@@ -349,9 +341,7 @@ class InteractiveCELREPL:
 
     def _show_help(self):
         """Show enhanced REPL help."""
-        help_table = Table(
-            title="REPL Commands", show_header=True, header_style="bold magenta"
-        )
+        help_table = Table(title="REPL Commands", show_header=True, header_style="bold magenta")
         help_table.add_column("Command", style="cyan")
         help_table.add_column("Description", style="green")
 
@@ -384,9 +374,7 @@ class InteractiveCELREPL:
             console.print("[dim]No context variables set[/dim]")
             return
 
-        table = Table(
-            title="Context Variables", show_header=True, header_style="bold magenta"
-        )
+        table = Table(title="Context Variables", show_header=True, header_style="bold magenta")
         table.add_column("Variable", style="cyan")
         table.add_column("Type", style="yellow")
         table.add_column("Value", style="green")
@@ -401,9 +389,7 @@ class InteractiveCELREPL:
         try:
             new_context = json.loads(context_json)
             if not isinstance(new_context, dict):
-                console.print(
-                    "[red]Error: Context must be a JSON object (dictionary)[/red]"
-                )
+                console.print("[red]Error: Context must be a JSON object (dictionary)[/red]")
                 return
 
             # Update the context
@@ -417,13 +403,9 @@ class InteractiveCELREPL:
             if len(context_keys) == 1:
                 console.print(f"[green]Context updated: {context_keys[0]}[/green]")
             elif len(context_keys) <= 3:
-                console.print(
-                    f"[green]Context updated: {', '.join(context_keys)}[/green]"
-                )
+                console.print(f"[green]Context updated: {', '.join(context_keys)}[/green]")
             else:
-                console.print(
-                    f"[green]Context updated: {len(context_keys)} variables[/green]"
-                )
+                console.print(f"[green]Context updated: {len(context_keys)} variables[/green]")
 
         except json.JSONDecodeError as e:
             console.print(f"[red]Error: Invalid JSON - {e}[/red]")
@@ -436,9 +418,7 @@ class InteractiveCELREPL:
             console.print("[dim]No history available[/dim]")
             return
 
-        table = Table(
-            title="Expression History", show_header=True, header_style="bold magenta"
-        )
+        table = Table(title="Expression History", show_header=True, header_style="bold magenta")
         table.add_column("#", style="dim", width=3)
         table.add_column("Expression", style="cyan")
         table.add_column("Result", style="green")
@@ -456,9 +436,7 @@ class InteractiveCELREPL:
 
     def _update_completer(self):
         """Update the completer with current context variables."""
-        words = (
-            self.cel_keywords + self.cel_functions + list(self.evaluator.context.keys())
-        )
+        words = self.cel_keywords + self.cel_functions + list(self.evaluator.context.keys())
         self.session.completer = WordCompleter(words)
 
     def _load_context(self, filename: str):
@@ -494,9 +472,7 @@ def evaluate_expressions_from_file(
     try:
         with open(filename, "r") as f:
             expressions = [
-                line.strip()
-                for line in f
-                if line.strip() and not line.strip().startswith("#")
+                line.strip() for line in f if line.strip() and not line.strip().startswith("#")
             ]
     except FileNotFoundError as e:
         console.print(f"[red]Error: Expression file '{filename}' not found[/red]")
@@ -533,9 +509,7 @@ def evaluate_expressions_from_file(
         syntax = Syntax(json_output, "json", theme="monokai")
         console.print(syntax)
     else:
-        table = Table(
-            title="Expression Results", show_header=True, header_style="bold magenta"
-        )
+        table = Table(title="Expression Results", show_header=True, header_style="bold magenta")
         table.add_column("#", style="dim", width=3)
         table.add_column("Expression", style="cyan")
         table.add_column("Result", style="green")
@@ -553,18 +527,14 @@ def evaluate_expressions_from_file(
                 result_str = str(result["result"])
                 if len(result_str) > 50:
                     result_str = result_str[:47] + "..."
-                table.add_row(
-                    str(i), result["expression"], result_str, f"{result['time_ms']:.2f}"
-                )
+                table.add_row(str(i), result["expression"], result_str, f"{result['time_ms']:.2f}")
 
         console.print(table)
 
 
 @app.command()
 def main(
-    expression: Annotated[
-        Optional[str], typer.Argument(help="CEL expression to evaluate")
-    ] = None,
+    expression: Annotated[Optional[str], typer.Argument(help="CEL expression to evaluate")] = None,
     context: Annotated[
         Optional[str], typer.Option("-c", "--context", help="Context as JSON string")
     ] = None,
@@ -576,18 +546,12 @@ def main(
         Optional[Path],
         typer.Option("--file", help="Read expressions from file (one per line)"),
     ] = None,
-    output: Annotated[
-        str, typer.Option("-o", "--output", help="Output format")
-    ] = "auto",
+    output: Annotated[str, typer.Option("-o", "--output", help="Output format")] = "auto",
     interactive: Annotated[
         bool, typer.Option("-i", "--interactive", help="Start interactive REPL mode")
     ] = False,
-    timing: Annotated[
-        bool, typer.Option("-t", "--timing", help="Show evaluation timing")
-    ] = False,
-    verbose: Annotated[
-        bool, typer.Option("-v", "--verbose", help="Verbose output")
-    ] = False,
+    timing: Annotated[bool, typer.Option("-t", "--timing", help="Show evaluation timing")] = False,
+    verbose: Annotated[bool, typer.Option("-v", "--verbose", help="Verbose output")] = False,
     version: Annotated[
         Optional[bool],
         typer.Option(

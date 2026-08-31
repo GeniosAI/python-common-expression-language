@@ -35,6 +35,7 @@ Build robust access control policies that are easy to understand and maintain.
 **Role-based access:**
 ```python
 import cel
+
 Context = cel.Context
 
 
@@ -63,12 +64,13 @@ def as_context(value=None):
 def evaluate(expression, context=None):
     return cel.evaluate(expression, as_context(context))
 
+
 # Context/evaluate are provided by the documentation adapter
 
 expression = 'user.role in ["admin", "editor"] && resource.type == "document"'
 context = {
     "user": {"role": "editor", "id": "user123"},
-    "resource": {"type": "document", "owner": "user456"}
+    "resource": {"type": "document", "owner": "user456"},
 }
 
 result = evaluate(expression, as_context(context))
@@ -79,9 +81,7 @@ print(result)  # → True
 ```python
 # Check permissions with time-based access
 expression = '"read" in user.permissions && user.active'
-context = {
-    "user": {"permissions": ["read", "write"], "active": True}
-}
+context = {"user": {"permissions": ["read", "write"], "active": True}}
 
 result = evaluate(expression, as_context(context))
 print(result)  # → True (user has read permission and is active)
@@ -113,20 +113,13 @@ Transform and validate data with declarative expressions that business users can
 # Context/evaluate are provided by the documentation adapter
 
 # Transform user data into a structured format
-expression = '''{
+expression = """{
   "name": user.first_name + " " + user.last_name,
   "can_vote": user.age >= 18,
   "tier": user.spend > 1000 ? "gold" : "silver"
-}'''
+}"""
 
-context = {
-    "user": {
-        "first_name": "Alice",
-        "last_name": "Johnson",
-        "age": 25,
-        "spend": 1500
-    }
-}
+context = {"user": {"first_name": "Alice", "last_name": "Johnson", "age": 25, "spend": 1500}}
 
 result = evaluate(expression, as_context(context))
 print(result)  # → {'name': 'Alice Johnson', 'can_vote': True, 'tier': 'gold'}
@@ -170,7 +163,7 @@ context = {
     "name": "Python CEL Library",
     "description": "Fast expression evaluation",
     "status": "active",
-    "query": "Python"
+    "query": "Python",
 }
 
 result = evaluate(expression, as_context(context))
@@ -179,11 +172,11 @@ print(result)  # → True (matches name field)
 
 **Date range filtering:**
 ```python
-expression = 'created_at >= start_date && created_at <= end_date'
+expression = "created_at >= start_date && created_at <= end_date"
 context = {
     "created_at": "2024-06-15T10:00:00Z",
     "start_date": "2024-01-01T00:00:00Z",
-    "end_date": "2024-12-31T23:59:59Z"
+    "end_date": "2024-12-31T23:59:59Z",
 }
 
 result = evaluate(expression, as_context(context))
@@ -216,7 +209,7 @@ Handle edge cases gracefully and provide meaningful error messages to users.
 # Context/evaluate are provided by the documentation adapter
 
 # Safely check nested properties
-expression = 'has(user.profile) && user.profile.verified'
+expression = "has(user.profile) && user.profile.verified"
 
 # Test with complete data
 context = {"user": {"profile": {"verified": True}}}
@@ -231,7 +224,7 @@ print(result)  # → False (safe fallback)
 
 **Null coalescing patterns:**
 ```python
-expression = 'has(user.display_name) ? user.display_name : user.email'
+expression = "has(user.display_name) ? user.display_name : user.email"
 context = {
     "user": {
         "email": "alice@company.com"
@@ -316,6 +309,7 @@ Learn battle-tested patterns for building robust, secure, and performant CEL app
 ```python
 # Context/evaluate are provided by the documentation adapter
 
+
 def safe_evaluate(expression, context):
     # Validate context structure before evaluation
     if not isinstance(context, dict):
@@ -326,6 +320,7 @@ def safe_evaluate(expression, context):
         return False
     return evaluate(expression, as_context(context))
 
+
 # Example usage
 result = safe_evaluate('user.role == "admin"', {"user": {"role": "admin"}})
 print(result)  # → True
@@ -335,12 +330,14 @@ print(result)  # → True
 ```python
 from functools import lru_cache
 
+
 @lru_cache(maxsize=1000)
 def get_cached_evaluation(expression, context_tuple):
     # Cache results for identical expression + context combinations
     # Convert tuple back to dict for evaluation
     context = dict(context_tuple)
     return evaluate(expression, as_context(context))
+
 
 # Usage with hashable context
 context = {"user_role": "admin", "resource_type": "document"}

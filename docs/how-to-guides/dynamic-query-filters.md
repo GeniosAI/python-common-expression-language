@@ -24,6 +24,7 @@ Use CEL to build safe, dynamic filters that combine user criteria with security 
 
 ```python
 import cel
+
 Context = cel.Context
 
 
@@ -52,8 +53,10 @@ def as_context(value=None):
 def evaluate(expression, context=None):
     return cel.evaluate(expression, as_context(context))
 
+
 import json
 # Context/evaluate are provided by the documentation adapter
+
 
 class DynamicQueryBuilder:
     """Build database queries dynamically using CEL expressions."""
@@ -63,7 +66,7 @@ class DynamicQueryBuilder:
             "admin": "true",  # Admins see everything
             "manager": "record.department == user.department",
             "user": "record.user_id == user.id",
-            "guest": "record.public == true"
+            "guest": "record.public == true",
         }
 
     def _format_value(self, value):
@@ -92,17 +95,17 @@ class DynamicQueryBuilder:
 
             # Build CEL expression based on operator
             if operator == "equals":
-                user_filter_parts.append(f'record.{field} == {self._format_value(value)}')
+                user_filter_parts.append(f"record.{field} == {self._format_value(value)}")
             elif operator == "contains":
-                user_filter_parts.append(f'{self._format_value(value)} in record.{field}')
+                user_filter_parts.append(f"{self._format_value(value)} in record.{field}")
             elif operator == "greater_than":
-                user_filter_parts.append(f'record.{field} > {self._format_value(value)}')
+                user_filter_parts.append(f"record.{field} > {self._format_value(value)}")
             elif operator == "less_than":
-                user_filter_parts.append(f'record.{field} < {self._format_value(value)}')
+                user_filter_parts.append(f"record.{field} < {self._format_value(value)}")
             elif operator == "in_list":
                 # value should be a list
-                value_list = ', '.join(self._format_value(v) for v in value)
-                user_filter_parts.append(f'record.{field} in [{value_list}]')
+                value_list = ", ".join(self._format_value(v) for v in value)
+                user_filter_parts.append(f"record.{field} in [{value_list}]")
 
         # Combine user filters with AND
         user_filter = " && ".join(user_filter_parts) if user_filter_parts else "true"
@@ -128,6 +131,7 @@ class DynamicQueryBuilder:
 
         return matching_records
 
+
 # Example usage
 query_builder = DynamicQueryBuilder()
 
@@ -140,16 +144,51 @@ regular_user = {"id": "user1", "role": "user", "department": "Sales"}
 user_filters = [
     {"field": "status", "operator": "equals", "value": "active"},
     {"field": "department", "operator": "equals", "value": "Sales"},
-    {"field": "amount", "operator": "greater_than", "value": 1000}
+    {"field": "amount", "operator": "greater_than", "value": 1000},
 ]
 
 # Sample data
 sample_records = [
-    {"id": "1", "user_id": "user1", "department": "Sales", "amount": 1500, "status": "active", "public": False},
-    {"id": "2", "user_id": "user2", "department": "Sales", "amount": 800, "status": "active", "public": False},
-    {"id": "3", "user_id": "user1", "department": "Marketing", "amount": 2000, "status": "active", "public": False},
-    {"id": "4", "user_id": "user3", "department": "Sales", "amount": 1200, "status": "inactive", "public": False},
-    {"id": "5", "user_id": "user4", "department": "Sales", "amount": 1800, "status": "active", "public": True}
+    {
+        "id": "1",
+        "user_id": "user1",
+        "department": "Sales",
+        "amount": 1500,
+        "status": "active",
+        "public": False,
+    },
+    {
+        "id": "2",
+        "user_id": "user2",
+        "department": "Sales",
+        "amount": 800,
+        "status": "active",
+        "public": False,
+    },
+    {
+        "id": "3",
+        "user_id": "user1",
+        "department": "Marketing",
+        "amount": 2000,
+        "status": "active",
+        "public": False,
+    },
+    {
+        "id": "4",
+        "user_id": "user3",
+        "department": "Sales",
+        "amount": 1200,
+        "status": "inactive",
+        "public": False,
+    },
+    {
+        "id": "5",
+        "user_id": "user4",
+        "department": "Sales",
+        "amount": 1800,
+        "status": "active",
+        "public": True,
+    },
 ]
 
 # Build filters for different users
@@ -201,10 +240,14 @@ assert "record.user_id == user.id" in user_filter  # User restricted to own reco
 # Demonstrate different data types
 # Demonstrate different data types
 mixed_filters = [
-    {"field": "active", "operator": "equals", "value": True},     # Boolean
-    {"field": "score", "operator": "greater_than", "value": 85.5}, # Float
-    {"field": "category", "operator": "in_list", "value": ["urgent", "sales"]}, # Check if field value is in list
-    {"field": "notes", "operator": "equals", "value": None}      # Null
+    {"field": "active", "operator": "equals", "value": True},  # Boolean
+    {"field": "score", "operator": "greater_than", "value": 85.5},  # Float
+    {
+        "field": "category",
+        "operator": "in_list",
+        "value": ["urgent", "sales"],
+    },  # Check if field value is in list
+    {"field": "notes", "operator": "equals", "value": None},  # Null
 ]
 
 # This will generate correctly formatted CEL expressions:

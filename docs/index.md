@@ -14,6 +14,7 @@ providing fast and safe CEL expression evaluation with seamless Python integrati
     **Simple evaluation**
     ```python
     import cel
+
     Context = cel.Context
 
 
@@ -42,6 +43,7 @@ providing fast and safe CEL expression evaluation with seamless Python integrati
     def evaluate(expression, context=None):
         return cel.evaluate(expression, as_context(context))
 
+
     # Context/evaluate are provided by the documentation adapter
 
     result = evaluate("age > 21", as_context({"age": 25}))
@@ -57,12 +59,7 @@ providing fast and safe CEL expression evaluation with seamless Python integrati
 
     **Nested data**
     ```python
-    user_data = {
-        "user": {
-            "name": "Alice",
-            "profile": {"verified": True, "role": "admin"}
-        }
-    }
+    user_data = {"user": {"name": "Alice", "profile": {"verified": True, "role": "admin"}}}
 
     # Access nested fields and business logic
     name_check = evaluate("user.name == 'Alice'", as_context(user_data))
@@ -215,15 +212,26 @@ policy = """
 """
 
 # Test different scenarios
-admin_user = {"user": {"role": "admin", "verified": True, "id": "admin1"}, "resource": {"owner": "bob", "public": False}}
-owner_user = {"user": {"role": "user", "verified": True, "id": "alice"}, "resource": {"owner": "alice", "public": False}}
-guest_user = {"user": {"role": "guest", "verified": True, "id": "guest1"}, "resource": {"owner": "bob", "public": True}}
+admin_user = {
+    "user": {"role": "admin", "verified": True, "id": "admin1"},
+    "resource": {"owner": "bob", "public": False},
+}
+owner_user = {
+    "user": {"role": "user", "verified": True, "id": "alice"},
+    "resource": {"owner": "alice", "public": False},
+}
+guest_user = {
+    "user": {"role": "guest", "verified": True, "id": "guest1"},
+    "resource": {"owner": "bob", "public": True},
+}
 
-assert evaluate(policy, as_context(admin_user)) == True   # → True (admin access granted)
-assert evaluate(policy, as_context(owner_user)) == True   # → True (owner access granted)
-assert evaluate(policy, as_context(guest_user)) == True   # → True (public resource access)
+assert evaluate(policy, as_context(admin_user)) == True  # → True (admin access granted)
+assert evaluate(policy, as_context(owner_user)) == True  # → True (owner access granted)
+assert evaluate(policy, as_context(guest_user)) == True  # → True (public resource access)
 
-print("✓ Access control policies working correctly")  # → ✓ Access control policies working correctly
+print(
+    "✓ Access control policies working correctly"
+)  # → ✓ Access control policies working correctly
 ```
 
 Simple, readable policies that handle complex business logic.

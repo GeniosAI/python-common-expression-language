@@ -45,6 +45,7 @@ After installation, you should have both the Python library and CLI tool availab
 
 ```python
 import cel
+
 Context = cel.Context
 
 
@@ -73,7 +74,9 @@ def as_context(value=None):
 def evaluate(expression, context=None):
     return cel.evaluate(expression, as_context(context))
 
+
 import cel
+
 result = evaluate("1 + 2", cel.Context())
 # → 3
 assert result == 3
