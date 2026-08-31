@@ -599,7 +599,7 @@ def benchmark_cel_performance():
         {
             "name": "Function calls",
             "expression": "double(x) + double(square(y))",
-            "context": {"x": 5, "y": 3, "double": lambda x: x * 2, "square": lambda x: x * x},
+            "context": {"x": 5, "y": 3, "square": lambda x: x * x},
             "expected": 14.0,  # CEL double(5) + Python square(3) = 5.0 + 9
             "iterations": 3000,
         },
@@ -610,19 +610,22 @@ def benchmark_cel_performance():
     for test_case in test_cases:
         print(f"\nBenchmarking: {test_case['name']}")
 
+        context = as_context(test_case["context"])
+        program = cel.compile(test_case["expression"])
+
         # Verify the expression works correctly
-        result = evaluate(test_case["expression"], as_context(test_case["context"]))
+        result = program.execute(context)
         # → Expected result (validates benchmark test case correctness)
         assert result == test_case["expected"], f"Expected {test_case['expected']}, got {result}"
 
         # Warmup
         for _ in range(100):
-            evaluate(test_case["expression"], as_context(test_case["context"]))
+            program.execute(context)
 
         # Benchmark
         start_time = time.perf_counter()
         for _ in range(test_case["iterations"]):
-            evaluate(test_case["expression"], as_context(test_case["context"]))
+            program.execute(context)
         end_time = time.perf_counter()
 
         # Calculate metrics

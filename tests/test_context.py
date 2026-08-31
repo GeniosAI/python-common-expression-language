@@ -1,4 +1,6 @@
 import datetime
+import gc
+import weakref
 
 import cel
 import pytest
@@ -106,6 +108,21 @@ def test_function_registration_and_repeated_execution():
 def test_function_must_be_callable():
     with pytest.raises(TypeError, match="callable"):
         cel.Context().add_function("not_callable", 42)
+
+
+def test_context_callback_cycles_are_collectable():
+    holder = {"context": cel.Context()}
+
+    def callback(holder=holder):
+        return holder["context"]
+
+    callback_ref = weakref.ref(callback)
+    holder["context"].add_function("callback", callback)
+    del callback
+    del holder
+
+    gc.collect()
+    assert callback_ref() is None
 
 
 def test_function_results_are_converted_to_cel():

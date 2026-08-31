@@ -3,7 +3,10 @@ use ::cel::objects::TryIntoValue;
 use ::cel::{Context as CelContext, ExecutionError, PreparedValue, Value};
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
+use pyo3::pyclass::{PyTraverseError, PyVisit};
 use pyo3::types::PyTuple;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use crate::{RustyCelType, RustyPyType};
 
@@ -35,6 +38,7 @@ impl PyPreparedValue {
 #[pyclass]
 pub struct Context {
     pub(crate) inner: CelContext<'static>,
+    callbacks: HashMap<String, Arc<Py<PyAny>>>,
 }
 
 #[pymethods]
@@ -43,6 +47,7 @@ impl Context {
     pub fn new() -> Self {
         Self {
             inner: CelContext::default(),
+            callbacks: HashMap::new(),
         }
     }
 
@@ -67,6 +72,9 @@ impl Context {
         if !function.bind(py).is_callable() {
             return Err(PyTypeError::new_err("function must be callable"));
         }
+
+        let function = Arc::new(function);
+        self.callbacks.insert(name.clone(), function.clone());
 
         let function_name = name.clone();
         self.inner.add_function(
@@ -110,6 +118,18 @@ impl Context {
             },
         );
         Ok(())
+    }
+
+    fn __traverse__(&self, visit: PyVisit<'_>) -> Result<(), PyTraverseError> {
+        for callback in self.callbacks.values() {
+            visit.call(callback.as_ref())?;
+        }
+        Ok(())
+    }
+
+    fn __clear__(&mut self) {
+        self.callbacks.clear();
+        self.inner = CelContext::default();
     }
 
     fn __repr__(&self) -> &'static str {

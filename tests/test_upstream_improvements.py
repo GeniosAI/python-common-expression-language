@@ -42,7 +42,7 @@ class TestStringUtilities:
         with pytest.raises(RuntimeError, match="Undefined variable or function.*indexOf"):
             evaluate('"hello world".indexOf("world")')
 
-    def test_substring_not_implemented(self):
+    def test_substring_implemented(self):
         """
         Test that substring() is now implemented upstream.
 
@@ -274,7 +274,7 @@ class TestMissingStringFunctions:
         with pytest.raises(RuntimeError, match="Undefined variable or function.*replace"):
             evaluate('"hello world".replace("world", "universe")')
 
-    def test_split_not_implemented(self):
+    def test_split_implemented(self):
         """
         Test that split() is now implemented upstream.
 

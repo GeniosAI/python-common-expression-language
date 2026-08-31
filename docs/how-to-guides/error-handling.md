@@ -167,7 +167,7 @@ def safe_evaluate(expression: str, context: Optional[Dict[str, Any]] = None) -> 
     except ValueError as e:
         logging.warning(f"CEL parse error: {e}")
         return None
-    except (TypeError, ValueError) as e:
+    except TypeError as e:
         logging.warning(f"CEL type error: {e}")
         return None
     except RuntimeError as e:
@@ -557,7 +557,7 @@ def safe_evaluate(expression: str, context: Optional[Dict[str, Any]] = None) -> 
     except ValueError as e:
         logging.warning(f"CEL parse error: {e}")
         return None
-    except (TypeError, ValueError) as e:
+    except TypeError as e:
         logging.warning(f"CEL type error: {e}")
         return None
     except RuntimeError as e:

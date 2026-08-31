@@ -92,7 +92,11 @@ assert result == True  # → Complex multi-condition policy evaluation
 
 ### Context vs Dictionary - When to Use Which?
 
-**Use Dictionary Context when:**
+Dictionaries are adapter input for `as_context()`, which converts them into a concrete
+`cel.Context`. They are not valid public API context values: callers must pass the
+resulting `Context` to `cel.evaluate()` rather than passing a dictionary directly.
+
+**Use a dictionary as adapter input when:**
 - Simple, one-off expressions
 - Static data that doesn't change
 - Quick prototyping or testing
@@ -105,8 +109,9 @@ assert result == True  # → Complex multi-condition policy evaluation
 
 **Step 1: Simple Dictionary Example**
 ```python
-# Simple case - dictionary is fine
-result = evaluate("x + y", as_context({"x": 10, "y": 20}))
+# Convert the dictionary to a concrete Context before calling the public API
+context = as_context({"x": 10, "y": 20})
+result = cel.evaluate("x + y", context)
 assert result == 30  # → Basic arithmetic with explicit prepared contexts
 ```
 

@@ -191,7 +191,10 @@ class CELEvaluator:
         """Update the internal CEL context object."""
         self._cel_context = Context()
         for name, value in self.context.items():
-            self._cel_context.add_variable(name, prepare(value))
+            if callable(value):
+                self._cel_context.add_function(name, value)
+            else:
+                self._cel_context.add_variable(name, prepare(value))
 
         # Always add stdlib functions to the context
         add_stdlib_to_context(self._cel_context)

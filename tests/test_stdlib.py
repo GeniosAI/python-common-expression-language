@@ -184,7 +184,7 @@ class TestUpstreamDetection:
         """
         assert evaluate('"hello".substring(1, 3)', {}) == "el"
 
-        # Note: test_upstream_improvements.py::TestStringUtilities::test_substring_not_implemented
+        # Note: test_upstream_improvements.py::TestStringUtilities::test_substring_implemented
         # also monitors this behavior.
 
     def test_our_wrapper_still_needed(self):

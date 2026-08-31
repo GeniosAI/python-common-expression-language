@@ -1,13 +1,15 @@
 mod context;
 
-use ::cel::objects::{Key, OptionalValue, TryIntoValue};
+use ::cel::objects::{Key, OptionalValue, TryIntoValue, ValueType};
 use ::cel::{ExecutionError, PreparedValue, Program, Value};
 use chrono::{DateTime, Duration as ChronoDuration, Offset, TimeZone};
 use context::{Context, PyPreparedValue};
 use log::warn;
 use pyo3::exceptions::{PyRuntimeError, PyTypeError, PyValueError};
 use pyo3::prelude::*;
-use pyo3::types::{PyBool, PyBytes, PyDict, PyList, PyMapping, PyTuple, PyType, PyTypeMethods};
+use pyo3::types::{
+    PyBool, PyBytes, PyDict, PyInt, PyList, PyMapping, PyTuple, PyType, PyTypeMethods,
+};
 use pyo3::{BoundObject, PyTypeInfo};
 use std::collections::HashMap;
 use std::error::Error;
@@ -197,10 +199,10 @@ impl<'py> IntoPyObject<'py> for RustyCelType {
                 }
                 dictionary.into_any()
             }
-            Value::Opaque(opaque) if opaque.runtime_type_name() == "optional_type" => {
-                let optional = opaque
-                    .downcast_ref::<OptionalValue>()
-                    .ok_or_else(|| PyValueError::new_err("invalid CEL optional value"))?;
+            Value::Opaque(opaque) => {
+                let optional = opaque.downcast_ref::<OptionalValue>().ok_or_else(|| {
+                    PyValueError::new_err("Cannot convert unsupported CEL opaque value to Python")
+                })?;
                 Py::new(
                     py,
                     PyOptionalValue {
@@ -210,7 +212,12 @@ impl<'py> IntoPyObject<'py> for RustyCelType {
                 .into_bound(py)
                 .into_any()
             }
-            other => format!("{other:?}").into_pyobject(py)?.into_any(),
+            other => {
+                return Err(PyValueError::new_err(format!(
+                    "Cannot convert CEL value of type {} to Python",
+                    other.type_of()
+                )));
+            }
         };
         Ok(object)
     }
@@ -288,6 +295,10 @@ impl TryIntoValue for RustyPyType<'_> {
             Ok(Value::Int(value))
         } else if let Ok(value) = object.extract::<u64>() {
             Ok(Value::UInt(value))
+        } else if object.is_instance_of::<PyInt>() {
+            Err(CelError::ConversionError(
+                "Python integer is outside the supported i64/u64 ranges".to_string(),
+            ))
         } else if let Ok(value) = object.extract::<f64>() {
             Ok(Value::Float(value))
         } else if let Ok(value) = object.extract::<DateTime<chrono::FixedOffset>>() {
@@ -357,11 +368,14 @@ fn map_execution_error_to_python(error: &ExecutionError) -> PyErr {
             "Undefined variable or function: '{name}'. Check that the variable is defined in the context and that the function name is spelled correctly."
         )),
         ExecutionError::UnsupportedBinaryOperator(operator, left, right) => {
-            let left_type = format!("{:?}", left.type_of());
-            let right_type = format!("{:?}", right.type_of());
-            let is_signed_unsigned =
-                (left_type == "Int" && right_type == "UInt")
-                    || (left_type == "UInt" && right_type == "Int");
+            let left_type = left.type_of();
+            let right_type = right.type_of();
+            let is_signed_unsigned = matches!(
+                (left_type, right_type),
+                (ValueType::Int, ValueType::UInt) | (ValueType::UInt, ValueType::Int)
+            );
+            let left_type = format!("{left_type:?}");
+            let right_type = format!("{right_type:?}");
             if is_signed_unsigned {
                 return PyTypeError::new_err(format!(
                     "Cannot mix signed and unsigned integers in {operator} operation: {left_type} and {right_type}. Use explicit conversion: int(value) or uint(value)."

@@ -37,6 +37,11 @@ def test_prepare_signed_and_unsigned_range_boundaries():
     assert execute_value(2**63 - 1) == 2**63 - 1
     assert execute_value(2**64 - 1) == 2**64 - 1
 
+    with pytest.raises(ValueError, match="Failed to prepare"):
+        cel.prepare(2**64)
+    with pytest.raises(ValueError, match="Failed to prepare"):
+        cel.prepare(-(2**63) - 1)
+
 
 def test_prepare_bytes_and_nested_tuple_snapshot():
     source = (b"payload", {"items": (1, 2)})
@@ -122,6 +127,16 @@ def test_unsupported_values_fail_during_prepare():
 
     with pytest.raises(ValueError, match="Failed to prepare"):
         cel.prepare(lambda: None)
+
+
+def test_add_variable_requires_prepared_values():
+    context = cel.Context()
+
+    with pytest.raises(TypeError):
+        context.add_variable("value", {"answer": 42})
+
+    with pytest.raises(TypeError):
+        context.add_variable("function", lambda: None)
 
 
 def test_prepared_value_has_no_public_constructor():

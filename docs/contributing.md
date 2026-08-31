@@ -260,7 +260,7 @@ import cel
 
 
 # Type hints for public APIs
-def evaluate(expression: str, context: Context) -> Any:
+def evaluate(expression: str, context: cel.Context) -> Any:
     """Evaluate a CEL expression with a required Context."""
     pass
 

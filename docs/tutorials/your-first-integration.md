@@ -74,7 +74,7 @@ print("✓ Context class basics working correctly")
 
 ### Batch Updates
 
-Add multiple variables at once using `update()`:
+Add multiple variables at once using `add_variables()`:
 
 ```python
 context2 = Context()

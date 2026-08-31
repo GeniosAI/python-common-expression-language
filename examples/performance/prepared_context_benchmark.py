@@ -83,8 +83,7 @@ def main() -> None:
                 ),
                 "replace_and_execute": benchmark(
                     lambda context=context, prepared=prepared, program=program: (
-                        context.add_variable("data", prepared),
-                        program.execute(context),
+                        context.add_variable("data", prepared) or program.execute(context)
                     ),
                     ITERATIONS,
                 ),

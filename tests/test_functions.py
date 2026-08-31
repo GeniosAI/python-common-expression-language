@@ -373,7 +373,8 @@ class TestFunctionPerformance:
         def simple_add(a, b):
             return a + b
 
-        context = {"add": simple_add}
+        context = cel.Context()
+        context.add_function("add", simple_add)
         expression = "add(1, 2)"
 
         # Warm up

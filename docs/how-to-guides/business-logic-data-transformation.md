@@ -324,8 +324,9 @@ class DataTransformationPipeline:
                 # Handle transformation errors gracefully
                 normalized[field] = None
 
-        # Add normalized data to context for metric calculations
-        context.add_variable("user", cel.prepare(normalized))
+        # Add input and normalized data to context for metric calculations
+        user_context = {**input_data, **normalized}
+        context.add_variable("user", cel.prepare(user_context))
 
         # Calculate derived metrics
         for field, expression in self.transformations["calculate_metrics"].items():
@@ -335,6 +336,10 @@ class DataTransformationPipeline:
             except Exception as e:
                 # Handle calculation errors gracefully
                 normalized[field] = None
+
+            # Refresh the prepared binding so subsequent metrics see this field
+            user_context[field] = normalized[field]
+            context.add_variable("user", cel.prepare(user_context))
 
         return normalized
 
