@@ -96,7 +96,7 @@ jobs:
 
       - name: Test ty type checker integration
         run: |
-          echo "from cel import evaluate, Context; evaluate('1+1')" > test_types.py
+          echo "from cel import evaluate, Context; evaluate('1+1', Context())" > test_types.py
           uvx ty check test_types.py
           rm test_types.py
           echo "✅ Type checker integration working"

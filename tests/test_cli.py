@@ -176,6 +176,12 @@ class TestCELEvaluator:
         result = evaluator.evaluate("x * y")
         assert result == 15
 
+    def test_evaluate_callable_from_context(self):
+        """Test evaluating a callable supplied in the context."""
+        evaluator = CELEvaluator({"double_value": lambda value: value * 2})
+        result = evaluator.evaluate("double_value(21)")
+        assert result == 42
+
     def test_update_context(self):
         """Test updating evaluator context."""
         evaluator = CELEvaluator({"x": 1})

@@ -28,10 +28,43 @@ Before diving deeper into CEL, let's step back and understand what makes CEL fun
 CEL is intentionally **not** a general-purpose programming language. You can't write loops, define functions, or perform I/O operations. This limitation is actually CEL's greatest strength.
 
 ```python
-from cel import evaluate
+import cel
+
+Context = cel.Context
+
+
+def add_variables(context, values):
+    for name, value in values.items():
+        if callable(value):
+            context.add_function(name, value)
+        else:
+            context.add_variable(name, cel.prepare(value))
+    return context
+
+
+def make_context(values=None):
+    context = cel.Context()
+    if values:
+        add_variables(context, values)
+    return context
+
+
+def as_context(value=None):
+    if isinstance(value, cel.Context):
+        return value
+    return make_context(value)
+
+
+def evaluate(expression, context=None):
+    return cel.evaluate(expression, as_context(context))
+
+
+# Context/evaluate are provided by the documentation adapter
 
 # ✅ This works - safe expression evaluation
-result = evaluate("user.age >= 18 && user.verified", {"user": {"age": 25, "verified": True}})
+result = evaluate(
+    "user.age >= 18 && user.verified", as_context({"user": {"age": 25, "verified": True}})
+)
 assert result == True  # → True (adult verified user)
 
 # ❌ This is impossible - no loops or side effects
@@ -53,20 +86,20 @@ assert result == True  # → True (adult verified user)
 CEL expressions describe **what** you want, not **how** to compute it.
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # Declarative: "I want users who are adults and verified"
 user_filter = "user.age >= 18 && user.verified"
 
 # Test cases
 test_cases = [
-    ({"user": {"age": 25, "verified": True}}, True),   # Valid adult
-    ({"user": {"age": 25, "verified": False}}, False), # Unverified
+    ({"user": {"age": 25, "verified": True}}, True),  # Valid adult
+    ({"user": {"age": 25, "verified": False}}, False),  # Unverified
     ({"user": {"age": 16, "verified": True}}, False),  # Minor
 ]
 
 for context, expected in test_cases:
-    result = evaluate(user_filter, context)
+    result = evaluate(user_filter, as_context(context))
     assert result == expected
 ```
 
@@ -83,21 +116,21 @@ This declarative nature makes CEL expressions:
 CEL expressions always return the same result given the same input.
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # This expression will ALWAYS return the same result for the same user
 policy = "user.role == 'admin' || (user.department == 'IT' && user.yearsOfService > 2)"
 
 # Compact test table
 test_scenarios = [
-    ({"role": "admin", "department": "sales", "yearsOfService": 1}, True),    # Admin override
-    ({"role": "user", "department": "IT", "yearsOfService": 3}, True),       # Senior IT
-    ({"role": "user", "department": "IT", "yearsOfService": 1}, False),      # Junior IT
-    ({"role": "user", "department": "sales", "yearsOfService": 5}, False),   # Non-IT
+    ({"role": "admin", "department": "sales", "yearsOfService": 1}, True),  # Admin override
+    ({"role": "user", "department": "IT", "yearsOfService": 3}, True),  # Senior IT
+    ({"role": "user", "department": "IT", "yearsOfService": 1}, False),  # Junior IT
+    ({"role": "user", "department": "sales", "yearsOfService": 5}, False),  # Non-IT
 ]
 
 for user_data, expected in test_scenarios:
-    result = evaluate(policy, {"user": user_data})
+    result = evaluate(policy, as_context({"user": user_data}))
     assert result == expected  # → Results match expected access levels
 ```
 
@@ -109,23 +142,28 @@ for user_data, expected in test_scenarios:
 
 **Policy and Rules Engines**
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # Business pricing with multiple factors
 pricing_rule = "base_price * (double(1) + tax_rate) * double(premium_customer ? 0.9 : 1.0)"
-result = evaluate(pricing_rule, {
-    "base_price": 100.0, "tax_rate": 0.08, "premium_customer": True
-})
+result = evaluate(
+    pricing_rule, as_context({"base_price": 100.0, "tax_rate": 0.08, "premium_customer": True})
+)
 # → 97.2 (premium customer gets 10% discount)
 assert result == 97.2  # Testing for illustration - not required in your code
 
 # Multi-tier access control
 access_policy = "user.role == 'admin' || (resource.owner == user.id && action in ['read', 'update']) || (resource.public && action == 'read')"
-result = evaluate(access_policy, {
-    "user": {"role": "admin", "id": "user1"},
-    "resource": {"owner": "user2", "public": False},
-    "action": "delete"
-})
+result = evaluate(
+    access_policy,
+    as_context(
+        {
+            "user": {"role": "admin", "id": "user1"},
+            "resource": {"owner": "user2", "public": False},
+            "action": "delete",
+        }
+    ),
+)
 # → True (admin role grants access to any action)
 assert result == True  # Testing for illustration - not required in your code
 ```
@@ -134,40 +172,50 @@ assert result == True  # Testing for illustration - not required in your code
 
 **Configuration Validation**
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # Business rule validation table
 validation_rules = {
     "Valid port range": "config.database.port > 0 && config.database.port < 65536",
     "Cache TTL minimum": "config.cache.ttl >= 60",
-    "SSL in production": "config.features.ssl_enabled || config.environment == 'development'"
+    "SSL in production": "config.features.ssl_enabled || config.environment == 'development'",
 }
 
 config = {
     "config": {
-        "database": {"port": 5432}, "cache": {"ttl": 300},
-        "features": {"ssl_enabled": True}, "environment": "production"
+        "database": {"port": 5432},
+        "cache": {"ttl": 300},
+        "features": {"ssl_enabled": True},
+        "environment": "production",
     }
 }
 
 # Validate all rules
 for description, rule in validation_rules.items():
-    result = evaluate(rule, config)
+    result = evaluate(rule, as_context(config))
     assert result == True, f"Failed: {description}"
 ```
 
 **Data Filtering and Transformation**
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # Dynamic API filters
 filters = {
-    "Active engineering/product": ("user.active && user.department in ['engineering', 'product']", {"user": {"active": True, "department": "engineering"}}, True),    # → True (active eng user)
-    "Performance scoring": ("double(base_score) * effort_multiplier + double(bonus_points)", {"base_score": 80, "effort_multiplier": 1.2, "bonus_points": 10}, 106.0)  # → 106.0 (calculated score)
+    "Active engineering/product": (
+        "user.active && user.department in ['engineering', 'product']",
+        {"user": {"active": True, "department": "engineering"}},
+        True,
+    ),  # → True (active eng user)
+    "Performance scoring": (
+        "double(base_score) * effort_multiplier + double(bonus_points)",
+        {"base_score": 80, "effort_multiplier": 1.2, "bonus_points": 10},
+        106.0,
+    ),  # → 106.0 (calculated score)
 }
 
 for name, (expr, ctx, expected) in filters.items():
-    result = evaluate(expr, ctx)
+    result = evaluate(expr, as_context(ctx))
     assert result == expected  # → Results match expected filter outcomes
 ```
 
@@ -199,15 +247,17 @@ def complex_approval_workflow(request):
     if request.amount > 10000:
         return "executive_approval"  # Multiple steps happen here
     elif request.department == "finance":
-        return "finance_approval"   # Different approval path
+        return "finance_approval"  # Different approval path
     else:
-        return "auto_approve"       # Simple approval
+        return "auto_approve"  # Simple approval
+
 
 # Test the function
 class MockRequest:
     def __init__(self, amount, department):
         self.amount = amount
         self.department = department
+
 
 result = complex_approval_workflow(MockRequest(15000, "engineering"))
 # → "executive_approval" (high-value request)
@@ -240,6 +290,7 @@ def send_notification(user, message):
     # slack_service.post(user.slack_id, message)
     return f"Sent '{message}' to {user['email']} and {user['slack_id']}"
 
+
 # Test the function
 user = {"email": "test@example.com", "slack_id": "@test"}
 result = send_notification(user, "Hello!")
@@ -265,7 +316,7 @@ Use Python for stateful operations:
 class RateLimiter:
     def __init__(self):
         self.requests = {}  # Persistent state
-    
+
     def is_allowed(self, user_id, max_requests=100):
         # Track request counts over time
         current_count = self.requests.get(user_id, 0)
@@ -274,10 +325,11 @@ class RateLimiter:
             return True
         return False
 
+
 # Test the class
 rate_limiter = RateLimiter()
-assert rate_limiter.is_allowed("user1", max_requests=2) == True   # → True (first request)
-assert rate_limiter.is_allowed("user1", max_requests=2) == True   # → True (second request)
+assert rate_limiter.is_allowed("user1", max_requests=2) == True  # → True (first request)
+assert rate_limiter.is_allowed("user1", max_requests=2) == True  # → True (second request)
 assert rate_limiter.is_allowed("user1", max_requests=2) == False  # → False (limit exceeded)
 ```
 
@@ -288,16 +340,18 @@ assert rate_limiter.is_allowed("user1", max_requests=2) == False  # → False (l
 CEL expressions should be readable by non-programmers. Business users should be able to understand and potentially modify them.
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # ✅ GOOD: Clear and readable
 clear_rule = "order.total > 100 && customer.loyalty_tier == 'gold'"
-result = evaluate(clear_rule, {"order": {"total": 150}, "customer": {"loyalty_tier": "gold"}})
+result = evaluate(
+    clear_rule, as_context({"order": {"total": 150}, "customer": {"loyalty_tier": "gold"}})
+)
 assert result == True  # → True (gold customer with large order)
 
-# ❌ BAD: Too cryptic - avoid this style  
+# ❌ BAD: Too cryptic - avoid this style
 cryptic_rule = "o.t > 1e2 && c.lt == 'g'"
-result = evaluate(cryptic_rule, {"o": {"t": 150}, "c": {"lt": "g"}})
+result = evaluate(cryptic_rule, as_context({"o": {"t": 150}, "c": {"lt": "g"}}))
 assert result == True  # → True (works but unreadable)
 ```
 
@@ -311,7 +365,7 @@ assert result == True  # → True (works but unreadable)
 
 **Why readable names matter:**
 - Business users can review and suggest changes
-- Debugging is faster when expressions are self-documenting  
+- Debugging is faster when expressions are self-documenting
 - Code reviews focus on logic, not deciphering abbreviations
 
 **💡 Takeaway: Use readable identifiers so policies are self-documenting.**
@@ -321,17 +375,17 @@ assert result == True  # → True (works but unreadable)
 Provide clean, well-structured data to your expressions.
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # ✅ Clean, structured context
 context = {
     "user": {"id": "user123", "role": "admin", "permissions": ["read", "write", "delete"]},
     "resource": {"type": "document", "owner": "user123", "public": False},
-    "action": "delete"
+    "action": "delete",
 }
 
 policy = "user.role == 'admin' || (resource.owner == user.id && 'delete' in user.permissions)"
-result = evaluate(policy, context)
+result = evaluate(policy, as_context(context))
 assert result == True
 ```
 
@@ -344,17 +398,40 @@ assert result == True
 CEL expressions are code - treat them as such with proper testing.
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # Compact test scenarios
 test_cases = [
-    ("Admin access", "user.role == 'admin'", {"user": {"role": "admin"}, "resource": {"type": "document"}, "action": "delete"}, True),    # → True (admin access)
-    ("Owner access", "resource.owner == user.id", {"user": {"id": "user123", "role": "user"}, "resource": {"owner": "user123"}, "action": "read"}, True),    # → True (owner access)
-    ("Denied access", "resource.owner == user.id", {"user": {"id": "user456", "role": "user"}, "resource": {"owner": "user123"}, "action": "read"}, False),   # → False (denied access)
+    (
+        "Admin access",
+        "user.role == 'admin'",
+        {"user": {"role": "admin"}, "resource": {"type": "document"}, "action": "delete"},
+        True,
+    ),  # → True (admin access)
+    (
+        "Owner access",
+        "resource.owner == user.id",
+        {
+            "user": {"id": "user123", "role": "user"},
+            "resource": {"owner": "user123"},
+            "action": "read",
+        },
+        True,
+    ),  # → True (owner access)
+    (
+        "Denied access",
+        "resource.owner == user.id",
+        {
+            "user": {"id": "user456", "role": "user"},
+            "resource": {"owner": "user123"},
+            "action": "read",
+        },
+        False,
+    ),  # → False (denied access)
 ]
 
 for name, policy, context, expected in test_cases:
-    result = evaluate(policy, context)
+    result = evaluate(policy, as_context(context))
     assert result == expected  # → Results match expected access decisions
 ```
 
@@ -365,17 +442,32 @@ for name, policy, context, expected in test_cases:
 Always check for field existence when dealing with optional data.
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # ✅ Safe patterns with has() checks
 safety_examples = [
-    ("Complete profile", 'has(user.profile) && user.profile.verified', {"user": {"profile": {"verified": True}}}, True),    # → True (profile exists and verified)
-    ("Missing profile", 'has(user.profile) && user.profile.verified', {"user": {}}, False),    # → False (no profile, safe fallback)
-    ("Fallback value", 'has(user.display_name) ? user.display_name : user.email', {"user": {"email": "test@example.com"}}, "test@example.com"),    # → "test@example.com" (fallback to email)
+    (
+        "Complete profile",
+        "has(user.profile) && user.profile.verified",
+        {"user": {"profile": {"verified": True}}},
+        True,
+    ),  # → True (profile exists and verified)
+    (
+        "Missing profile",
+        "has(user.profile) && user.profile.verified",
+        {"user": {}},
+        False,
+    ),  # → False (no profile, safe fallback)
+    (
+        "Fallback value",
+        "has(user.display_name) ? user.display_name : user.email",
+        {"user": {"email": "test@example.com"}},
+        "test@example.com",
+    ),  # → "test@example.com" (fallback to email)
 ]
 
 for name, expr, context, expected in safety_examples:
-    result = evaluate(expr, context)
+    result = evaluate(expr, as_context(context))
     assert result == expected  # → Results show safe handling of optional fields
 ```
 
@@ -386,7 +478,7 @@ for name, expr, context, expected in safety_examples:
 Make it clear what data your expressions expect.
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # Expected context schema:
 # {
@@ -401,10 +493,10 @@ access_policy = "user.role == 'admin' || (resource.public && action == 'read') |
 test_context = {
     "user": {"id": "user1", "role": "user", "department": "engineering", "verified": True},
     "resource": {"type": "document", "owner": "user1", "public": False},
-    "action": "read"
+    "action": "read",
 }
 
-result = evaluate(access_policy, test_context)
+result = evaluate(access_policy, as_context(test_context))
 assert result == True  # → True (owner access granted)
 ```
 
@@ -421,24 +513,19 @@ Think of CEL as a very smart calculator that can work with complex data structur
 3. **Get a result** (always the same for the same inputs)
 
 ```python
-from cel import evaluate
+# Context/evaluate are provided by the documentation adapter
 
 # Like a calculator, but for complex logic
 expression = "price * double(quantity) * (double(1) + tax_rate) * double(customer.vip ? 0.9 : 1.0)"
-context = {
-    "price": 29.99,
-    "quantity": 2, 
-    "tax_rate": 0.08,
-    "customer": {"vip": True}
-}
+context = {"price": 29.99, "quantity": 2, "tax_rate": 0.08, "customer": {"vip": True}}
 
-total = evaluate(expression, context)  # 58.38 (with VIP discount)
+total = evaluate(expression, as_context(context))  # 58.38 (with VIP discount)
 assert abs(total - 58.3006) < 0.001  # 29.99 * 2 * 1.08 * 0.9
 ```
 
 This mental model helps you understand CEL's boundaries:
 - Calculators don't send emails → CEL doesn't do I/O
-- Calculators don't remember previous calculations → CEL doesn't have state  
+- Calculators don't remember previous calculations → CEL doesn't have state
 - Calculators always give the same answer → CEL is deterministic
 
 ## Understanding CEL's Place in Your Architecture
