@@ -115,7 +115,12 @@ jobs:
     # Armed for `release` by the variable; forced for a single manual run by the
     # `force` input, which is null and therefore falsy on `release`. See header.
     if: vars.CODEARTIFACT_PUBLISH_ENABLED == 'true' || inputs.force
-    uses: GeniosAI/ci-templates/.github/workflows/codeartifact-build-rust.yml@main
+    # Pinned to the tip of ci-templates#27, the PR that introduces these two
+    # templates: they do not exist on ci-templates `main`, so `@main` would fail
+    # with `workflow was not found` rather than running anything. A mutable ref
+    # would also let a later change to the called workflow act on this caller's
+    # `id-token: write`. Repoint to a `main` SHA once ci-templates#27 lands.
+    uses: GeniosAI/ci-templates/.github/workflows/codeartifact-build-rust.yml@53a515b0bedebec373b3dcaff8ab7126f8d6ad01 # feat/be-2104-codeartifact-templates
     with:
       # cp313 only — see the cp312 note in the header. Passed explicitly even
       # though it is currently the template default, because it is the one place
@@ -144,9 +149,10 @@ jobs:
       # access key. The template's publish job declares this too, but it cannot
       # hold a permission this caller did not grant, so it has to be granted
       # here as well.
-      id-token: write
+      id-token: write   # OIDC to AWS; nothing is written to the repository
       contents: read
-    uses: GeniosAI/ci-templates/.github/workflows/codeartifact-publish.yml@main
+    # Pinned for the same reason as the build job above.
+    uses: GeniosAI/ci-templates/.github/workflows/codeartifact-publish.yml@53a515b0bedebec373b3dcaff8ab7126f8d6ad01 # feat/be-2104-codeartifact-templates
     with:
       # pyproject [project].name. The import package is `cel`; the DISTRIBUTION
       # is `common-expression-language`, and that is what is checked against the
