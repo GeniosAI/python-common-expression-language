@@ -162,10 +162,18 @@ jobs:
       # sdist. Taken from the build's output rather than written out, so the two
       # halves cannot disagree about the artifact prefix.
       artifact_pattern: ${{ needs.build.outputs.artifact_pattern }}
-      # Stated rather than defaulted: this input selects which account, domain
-      # and role a publish goes to, and that is not something to leave implicit.
-      # dev is where this repo is being rolled out first.
-      environment: dev
+      # This input selects which account, domain and role a publish goes to, and
+      # that is not something to leave implicit.
+      #
+      # Both of these are stated rather than defaulted because the template's
+      # defaults are stale: they resolve `gh-codeartifact-publish-dev` in the
+      # retired account. Verified live on 2026-09-08 — 274089074803 holds exactly
+      # one publish role, `devops-aws-gh-codeartifact-publish-prd`, and its trust
+      # policy names this repository at `refs/heads/main`. The `-dev` role does
+      # not exist there, so the defaults fail the assume step with an
+      # AccessDenied naming a role nobody ever provisioned.
+      environment: prd
+      role_name_prefix: devops-aws-gh-codeartifact-publish-
       # package_version is intentionally left at its default (empty), which
       # derives the version from the downloaded distributions. That guarantees
       # the version checked for duplicates is the version actually inside the
