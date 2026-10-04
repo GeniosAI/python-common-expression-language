@@ -42,7 +42,7 @@ python-source = "python"
 dev-dependencies = [
     "pytest>=8.4.1",
     "maturin>=1.8.0",
-    "ruff>=0.12.7",
+    "ruff==0.16.10",
     "mypy>=1.17.1",
 ]
 
