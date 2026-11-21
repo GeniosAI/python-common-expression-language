@@ -19,7 +19,15 @@ permissions:
   contents: read
 
 jobs:
+  pr-conventions:
+    uses: GeniosAI/ci-templates/.github/workflows/pr-conventions.yml@main
+    permissions:
+      contents: read
+    secrets:
+      LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+
   test:
+    needs: pr-conventions
     name: Test Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
@@ -53,6 +61,7 @@ jobs:
         run: uv run pytest --verbose --tb=short
 
   lint:
+    needs: pr-conventions
     name: Code Quality & Type Checking
     runs-on: ubuntu-latest
     steps:
